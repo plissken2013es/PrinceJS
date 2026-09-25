@@ -1,4 +1,4 @@
-"use strict";
+import PrinceJS from "./PrinceJS.js";
 
 PrinceJS.Fighter = function (game, level, location, direction, room, key, animKey) {
   this.level = level;

@@ -1,4 +1,4 @@
-"use strict";
+import PrinceJS from "./PrinceJS.js";
 
 PrinceJS.Actor = function (game, charX, charY, charFace, key, animKey) {
   Phaser.Sprite.call(this, game, 0, 0, key);

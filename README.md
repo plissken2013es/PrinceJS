@@ -8,13 +8,18 @@ Prince of Persia reimplementation written in HTML5/Javascript
 
 ## Play Locally
 
-- Install [Node.js](https://nodejs.org)
+- Install [Node.js](https://nodejs.org) 20.19+ or 22.12+
 - Terminal:
   - `npm install`
   - `npm start`
 - Chrome:
   - `localhost:8080`
 - Enjoy!
+
+## Build
+
+- `npm run build` creates a static build in `dist/` (game files live in `public/`)
+- `npm run preview` serves that build
 
 ## Tests
 

@@ -24,7 +24,8 @@ module.exports = defineConfig({
   },
   projects: [{ name: "chromium", use: { ...devices["Desktop Chrome"], viewport: { width: 660, height: 420 } } }],
   webServer: {
-    command: `npx http-server -p ${PORT} -s -c-1`,
+    // Tests run against the production build
+    command: `npm run build && npx vite preview --port ${PORT} --strictPort`,
     url: `http://localhost:${PORT}/`,
     reuseExistingServer: !process.env.CI
   }

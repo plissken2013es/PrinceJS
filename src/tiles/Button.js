@@ -1,4 +1,4 @@
-"use strict";
+import PrinceJS from "../PrinceJS.js";
 
 PrinceJS.Tile.Button = function (game, element, modifier, type) {
   PrinceJS.Tile.Base.call(this, game, element, modifier, type);

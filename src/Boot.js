@@ -1,6 +1,4 @@
-"use strict";
-
-let PrinceJS = {};
+import PrinceJS from "./PrinceJS.js";
 
 PrinceJS.SCALE_FACTOR = 2;
 

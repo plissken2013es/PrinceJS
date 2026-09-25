@@ -1,4 +1,4 @@
-"use strict";
+import PrinceJS from "../PrinceJS.js";
 
 PrinceJS.Tile.ExitDoor = function (game, modifier, type, open = false) {
   PrinceJS.Tile.Base.call(this, game, PrinceJS.Level.TILE_EXIT_RIGHT, modifier, type);

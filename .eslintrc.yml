@@ -2,14 +2,13 @@
 root: true
 #  https://eslint.org/docs/rules/
 env:
-  node: true
-  es2017: true
+  browser: true
+  es2020: true
 parserOptions:
-  ecmaVersion: 10
+  ecmaVersion: 2020
+  sourceType: module
 globals:
   Phaser: false
-  PrinceJS: false
-  document: false
 extends:
   - "eslint:recommended"
   - prettier
@@ -24,6 +23,10 @@ rules:
   curly: [error]
   no-constant-condition: [error, { checkLoops: false }]
 overrides:
-  - files: ["tests/**/*.js"]
+  - files: ["tests/**/*.js", "playwright.config.js"]
     env:
-      browser: true
+      node: true
+    parserOptions:
+      sourceType: script
+    globals:
+      PrinceJS: false

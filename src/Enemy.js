@@ -1,4 +1,4 @@
-"use strict";
+import PrinceJS from "./PrinceJS.js";
 
 PrinceJS.Enemy = function (game, level, location, direction, room, skill, color, key, id) {
   this.baseCharName = key;

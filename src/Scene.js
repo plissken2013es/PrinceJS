@@ -1,4 +1,4 @@
-"use strict";
+import PrinceJS from "./PrinceJS.js";
 
 PrinceJS.Scene = function (game) {
   this.game = game;

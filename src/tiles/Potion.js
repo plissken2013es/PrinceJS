@@ -1,4 +1,4 @@
-"use strict";
+import PrinceJS from "../PrinceJS.js";
 
 PrinceJS.Tile.Potion = function (game, modifier, type) {
   PrinceJS.Tile.Base.call(this, game, PrinceJS.Level.TILE_POTION, modifier, type);

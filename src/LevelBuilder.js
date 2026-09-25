@@ -1,4 +1,4 @@
-"use strict";
+import PrinceJS from "./PrinceJS.js";
 
 PrinceJS.LevelBuilder = function (game, delegate) {
   this.game = game;
