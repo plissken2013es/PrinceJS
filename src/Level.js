@@ -1,7 +1,7 @@
 import PrinceJS from "./PrinceJS.js";
 
-PrinceJS.Level = function (game, number, name, type) {
-  this.game = game;
+PrinceJS.Level = function (scene, number, name, type) {
+  this.scene = scene;
 
   this.number = number;
   this.name = name;
@@ -10,17 +10,18 @@ PrinceJS.Level = function (game, number, name, type) {
 
   this.rooms = [];
 
-  this.back = this.game.add.group();
-  this.back.z = 10;
+  // Tiles are drawn in two layers, behind (depth 10) and in front of (depth 30) the actors
+  this.back = this.scene.add.layer();
+  this.back.setDepth(10);
 
-  this.front = this.game.add.group();
-  this.front.z = 30;
+  this.front = this.scene.add.layer();
+  this.front.setDepth(30);
 
   this.trobs = [];
 
   this.maskedTile = null;
 
-  this.dummyWall = new PrinceJS.Tile.Base(this.game, PrinceJS.Level.TILE_WALL, 0, this.type);
+  this.dummyWall = new PrinceJS.Tile.Base(this.scene, PrinceJS.Level.TILE_WALL, 0, this.type);
 };
 
 PrinceJS.Level.TYPE_DUNGEON = 0;
@@ -178,9 +179,9 @@ PrinceJS.Level.prototype = {
   },
 
   floorStartFall: function (tile) {
-    let space = new PrinceJS.Tile.Base(this.game, PrinceJS.Level.TILE_SPACE, 0, tile.type);
+    let space = new PrinceJS.Tile.Base(this.scene, PrinceJS.Level.TILE_SPACE, 0, tile.type);
     if (tile.type === PrinceJS.Level.TYPE_PALACE) {
-      space.back.frameName = tile.key + "_0_1";
+      space.backSprite.setFrame(tile.key + "_0_1");
     }
     this.addTile(tile.roomX, tile.roomY, tile.room, space);
 

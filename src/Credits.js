@@ -1,75 +1,69 @@
+import Phaser from "phaser";
 import PrinceJS from "./PrinceJS.js";
 
-PrinceJS.Credits = function (game) {
-  this.tick = 0;
+PrinceJS.Credits = class extends Phaser.Scene {
+  constructor() {
+    super("Credits");
+    this.tick = 0;
+  }
 };
 
-PrinceJS.Credits.prototype = {
+Object.assign(PrinceJS.Credits.prototype, {
   preload: function () {},
 
   create: function () {
     this.tick = 0;
+    PrinceJS.Utils.setupCamera(this);
 
-    this.game.world.setBounds(0, 0, PrinceJS.SCREEN_WIDTH, PrinceJS.SCREEN_HEIGHT);
-    this.game.world.alpha = 1;
-
-    this.textBack = this.game.add.image(0, 0, "title", "marry_jaffar");
+    this.textBack = this.add.image(0, 0, "title", "marry_jaffar").setOrigin(0, 0);
     this.textBack.alpha = 0;
 
-    this.tween1 = this.game.add
-      .tween(this.textBack)
-      .to({ alpha: 1 }, 2000, Phaser.Easing.Linear.None, false, 0, 0, false);
+    this.tween1 = this.tweens.add({ targets: this.textBack, alpha: 1, duration: 2000, paused: true });
 
-    this.back = this.game.add.image(0, this.world.height, "title", "prince");
-    this.back.anchor.setTo(0, 1);
+    this.back = this.add.image(0, PrinceJS.SCREEN_HEIGHT, "title", "prince");
+    PrinceJS.Utils.anchor(this.back, 0, 1);
 
-    this.cropRect = new Phaser.Rectangle(0, 0, 0, this.back.height);
-    this.tween2 = this.game.add
-      .tween(this.cropRect)
-      .to({ width: this.back.width }, 200, Phaser.Easing.Linear.None, false, 0, 0, false);
-    this.back.crop(this.cropRect);
+    this.tween2 = PrinceJS.Utils.revealTween(this, this.back, 200);
 
-    this.credits = this.game.add.image(0, this.world.height, "title", "credits");
-    this.credits.anchor.setTo(0, 1);
+    this.credits = this.add.image(0, PrinceJS.SCREEN_HEIGHT, "title", "credits");
+    PrinceJS.Utils.anchor(this.credits, 0, 1);
 
-    this.cropCredits = new Phaser.Rectangle(0, 0, 0, this.credits.height);
-    this.tween3 = this.game.add
-      .tween(this.cropCredits)
-      .to({ width: this.credits.width }, 200, Phaser.Easing.Linear.None, false, 0, 0, false);
-    this.credits.crop(this.cropCredits);
+    this.tween3 = PrinceJS.Utils.revealTween(this, this.credits, 200);
 
-    this.tween4 = this.game.add
-      .tween(this.credits)
-      .to({ alpha: 0 }, 2000, Phaser.Easing.Linear.None, false, 0, 0, false);
-    this.tween4.onComplete.add(this.play, this);
+    this.tween4 = this.tweens.add({
+      targets: this.credits,
+      alpha: 0,
+      duration: 2000,
+      paused: true,
+      onComplete: this.play,
+      callbackScope: this
+    });
 
-    this.input.keyboard.onDownCallback = this.play.bind(this);
+    PrinceJS.Utils.onAnyKey(this, this.play.bind(this));
   },
 
   update: function () {
     switch (this.tick) {
       case 0:
-        this.tween1.start();
+        this.tween1.play();
         break;
       case 1200:
-        this.tween2.start();
+        this.tween2.play();
         break;
       case 1400:
-        this.tween3.start();
+        this.tween3.play();
         break;
       case 1600:
         this.textBack.visible = this.back.visible = false;
-        this.tween4.start();
+        this.tween4.play();
     }
 
     this.tick++;
-    this.back.updateCrop();
-    this.credits.updateCrop();
   },
 
   play: function () {
     PrinceJS.currentLevel = 1;
-    this.input.keyboard.onDownCallback = null;
-    this.state.start("Game");
+    PrinceJS.Utils.onAnyKey(this, null);
+    this.scene.start("Game");
   }
-};
+});

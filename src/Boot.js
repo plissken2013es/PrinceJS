@@ -1,3 +1,4 @@
+import Phaser from "phaser";
 import PrinceJS from "./PrinceJS.js";
 
 PrinceJS.SCALE_FACTOR = 2;
@@ -29,16 +30,16 @@ PrinceJS.Init = function () {
 };
 PrinceJS.Init();
 
-PrinceJS.Boot = function (game) {};
+PrinceJS.Boot = class extends Phaser.Scene {
+  constructor() {
+    super("Boot");
+  }
 
-PrinceJS.Boot.prototype = {
-  preload: function () {
+  preload() {
     this.load.bitmapFont("font", "assets/font/prince_0.png", "assets/font/prince.fnt");
-  },
+  }
 
-  create: function () {
-    this.world.scale.set(PrinceJS.SCALE_FACTOR);
-
-    this.state.start("Preloader");
+  create() {
+    this.scene.start("Preloader");
   }
 };

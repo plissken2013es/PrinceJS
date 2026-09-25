@@ -1,3 +1,4 @@
+import Phaser from "phaser";
 import PrinceJS from "./PrinceJS.js";
 
 // Module evaluation order matters: prototypes are extended at load time
@@ -34,18 +35,26 @@ import "./tiles/Sword.js";
 import "./tiles/Torch.js";
 
 window.addEventListener("load", () => {
-  let game = new Phaser.Game(640, 400, Phaser.AUTO, "gameContainer", null, false, false);
-  // Exposed for the automated tests in tests/
+  let game = new Phaser.Game({
+    type: Phaser.AUTO,
+    width: PrinceJS.WORLD_WIDTH,
+    height: PrinceJS.WORLD_HEIGHT,
+    parent: "gameContainer",
+    backgroundColor: "#000000",
+    pixelArt: true,
+    // The first scene in the list starts automatically
+    scene: [
+      PrinceJS.Boot,
+      PrinceJS.Preloader,
+      PrinceJS.Game,
+      PrinceJS.Title,
+      PrinceJS.EndTitle,
+      PrinceJS.Credits,
+      PrinceJS.Cutscene
+    ]
+  });
+  // Exposed for the automated tests in tests/ and for browser dev tools
   PrinceJS.game = game;
   window.PrinceJS = PrinceJS;
-
-  game.state.add("Boot", PrinceJS.Boot);
-  game.state.add("Preloader", PrinceJS.Preloader);
-  game.state.add("Game", PrinceJS.Game);
-  game.state.add("Title", PrinceJS.Title);
-  game.state.add("EndTitle", PrinceJS.EndTitle);
-  game.state.add("Credits", PrinceJS.Credits);
-  game.state.add("Cutscene", PrinceJS.Cutscene);
-
-  game.state.start("Boot");
+  window.Phaser = Phaser;
 });

@@ -1,24 +1,26 @@
 import PrinceJS from "./PrinceJS.js";
 
-PrinceJS.Mouse = function (game, level, room, location, direction) {
-  this.level = level;
-  this.room = room;
+PrinceJS.Mouse = class extends PrinceJS.Actor {
+  constructor(scene, level, room, location, direction) {
+    let charBlockX = location % 10;
+    let charBlockY = Math.floor(location / 10);
 
-  this.charBlockX = location % 10;
-  this.charBlockY = Math.floor(location / 10);
+    let x = PrinceJS.Utils.convertBlockXtoX(charBlockX);
+    let y = PrinceJS.Utils.convertBlockYtoY(charBlockY);
 
-  let x = PrinceJS.Utils.convertBlockXtoX(this.charBlockX);
-  let y = PrinceJS.Utils.convertBlockYtoY(this.charBlockY);
+    super(scene, x, y, direction, "mouse");
 
-  PrinceJS.Actor.call(this, game, x, y, direction, "mouse");
+    this.level = level;
+    this.room = room;
 
-  this.action = "stop";
+    this.charBlockX = charBlockX;
+    this.charBlockY = charBlockY;
 
-  this.updateBase();
+    this.action = "stop";
+
+    this.updateBase();
+  }
 };
-
-PrinceJS.Mouse.prototype = Object.create(PrinceJS.Actor.prototype);
-PrinceJS.Mouse.prototype.constructor = PrinceJS.Mouse;
 
 PrinceJS.Mouse.prototype.updateActor = function () {
   this.processCommand();

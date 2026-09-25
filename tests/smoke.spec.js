@@ -2,13 +2,13 @@
 
 const { test, expect } = require("@playwright/test");
 const {
-  WAIT,
   boot,
   waitForState,
   currentState,
   startState,
   startLevel,
   waitForLevel,
+  waitForCutsceneOrLevel,
   finishLevel,
   gameInfo,
   expectLoopRunning,
@@ -45,9 +45,8 @@ for (const level of LEVELS) {
   });
 }
 
-// The exit door requests the next level from a setTimeout. Finishing the level
-// at different phases of the 80ms world tick used to crash the transitions into
-// levels 4 and 12 in roughly half of the attempts.
+// Finishing a level at different phases of the 80ms world tick used to crash
+// the transitions into levels 4 and 12 in roughly half of the attempts.
 for (const from of LEVELS.slice(0, -1)) {
   const to = from + 1;
   test(`transition from level ${from} to level ${to}`, async ({ page }) => {
@@ -58,15 +57,7 @@ for (const from of LEVELS.slice(0, -1)) {
       try {
         await startLevel(page, from);
         await finishLevel(page, delay);
-        await page.waitForFunction(
-          (to) =>
-            PrinceJS.game.state._created &&
-            !PrinceJS.game.state._pendingState &&
-            (PrinceJS.game.state.current === "Cutscene" ||
-              (PrinceJS.game.state.current === "Game" && PrinceJS.currentLevel === to)),
-          to,
-          WAIT
-        );
+        await waitForCutsceneOrLevel(page, to);
         if ((await currentState(page)) === "Cutscene") {
           await page.keyboard.press("Enter");
         }

@@ -6,6 +6,8 @@ export default defineConfig({
   server: { port: 8080 },
   build: {
     // "assets" is taken by the game's own files in public/assets
-    assetsDir: "bundle"
+    assetsDir: "bundle",
+    // Phaser alone is about 1.3 MB minified
+    chunkSizeWarningLimit: 1600
   }
 });

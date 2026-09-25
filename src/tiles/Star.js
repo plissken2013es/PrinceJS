@@ -1,9 +1,9 @@
 import PrinceJS from "../PrinceJS.js";
 
-PrinceJS.Tile.Star = function (game, x, y) {
-  this.game = game;
+PrinceJS.Tile.Star = function (scene, x, y) {
+  this.scene = scene;
 
-  this.back = this.game.make.sprite(x, y, "cutscene");
+  this.back = PrinceJS.Utils.image(this.scene, x, y, "cutscene", "star1");
 
   this.state = 1;
 
@@ -11,7 +11,7 @@ PrinceJS.Tile.Star = function (game, x, y) {
 };
 
 PrinceJS.Tile.Star.prototype.update = function () {
-  let step = this.game.rnd.between(1, 10);
+  let step = PrinceJS.Utils.between(1, 10);
 
   switch (step) {
     case 1:
@@ -27,7 +27,7 @@ PrinceJS.Tile.Star.prototype.update = function () {
       break;
   }
 
-  this.back.frameName = "star" + this.state;
+  this.back.setFrame("star" + this.state);
 };
 
 PrinceJS.Tile.Star.prototype.constructor = PrinceJS.Tile.Star;

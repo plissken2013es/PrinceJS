@@ -1,44 +1,44 @@
+import Phaser from "phaser";
 import PrinceJS from "./PrinceJS.js";
 
-PrinceJS.Kid = function (game, level, location, direction, room) {
-  PrinceJS.Fighter.call(this, game, level, location, direction, room, "kid");
+PrinceJS.Kid = class extends PrinceJS.Fighter {
+  constructor(scene, level, location, direction, room) {
+    super(scene, level, location, direction, room, "kid");
 
-  this.onNextLevel = new Phaser.Signal();
-  this.onRecoverLive = new Phaser.Signal();
-  this.onAddLive = new Phaser.Signal();
+    this.onNextLevel = new PrinceJS.Signal();
+    this.onRecoverLive = new PrinceJS.Signal();
+    this.onAddLive = new PrinceJS.Signal();
 
-  this.pickupSword = false;
-  this.pickupPotion = false;
+    this.pickupSword = false;
+    this.pickupPotion = false;
 
-  this.allowCrawl = true;
-  this.charRepeat = false;
-  this.recoverCrop = false;
-  this.checkFloorStepFall = false;
-  this.backwardsFall = 1;
+    this.allowCrawl = true;
+    this.charRepeat = false;
+    this.recoverCrop = false;
+    this.checkFloorStepFall = false;
+    this.backwardsFall = 1;
 
-  this.cursors = this.game.input.keyboard.createCursorKeys();
-  this.shiftKey = this.game.input.keyboard.addKey(Phaser.Keyboard.SHIFT);
+    this.cursors = this.scene.input.keyboard.createCursorKeys();
+    this.shiftKey = this.scene.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SHIFT);
 
-  this.registerCommand(0xfd, this.CMD_UP); // 253
-  this.registerCommand(0xfc, this.CMD_DOWN); // 252
-  this.registerCommand(0xf7, this.CMD_IFWTLESS); // 247
-  this.registerCommand(0xf5, this.CMD_JARU); // 245
-  this.registerCommand(0xf4, this.CMD_JARD); // 244
-  this.registerCommand(0xf3, this.CMD_EFFECT); // 243
-  this.registerCommand(0xf1, this.CMD_NEXTLEVEL); // 241
+    this.registerCommand(0xfd, this.CMD_UP); // 253
+    this.registerCommand(0xfc, this.CMD_DOWN); // 252
+    this.registerCommand(0xf7, this.CMD_IFWTLESS); // 247
+    this.registerCommand(0xf5, this.CMD_JARU); // 245
+    this.registerCommand(0xf4, this.CMD_JARD); // 244
+    this.registerCommand(0xf3, this.CMD_EFFECT); // 243
+    this.registerCommand(0xf1, this.CMD_NEXTLEVEL); // 241
 
-  this.maxHealth = PrinceJS.maxHealth;
-  this.health = this.maxHealth;
+    this.maxHealth = PrinceJS.maxHealth;
+    this.health = this.maxHealth;
 
-  this.hasSword = PrinceJS.currentLevel > 1;
-  this.blockEngarde = false;
-  this.bumpTimer = 0;
-  this.shadowFlashTimer = 0;
-  this.opponentSync = false;
+    this.hasSword = PrinceJS.currentLevel > 1;
+    this.blockEngarde = false;
+    this.bumpTimer = 0;
+    this.shadowFlashTimer = 0;
+    this.opponentSync = false;
+  }
 };
-
-PrinceJS.Kid.prototype = Object.create(PrinceJS.Fighter.prototype);
-PrinceJS.Kid.prototype.constructor = PrinceJS.Kid;
 
 PrinceJS.Kid.prototype.CMD_UP = function (data) {
   if (this.charBlockY === 0) {
@@ -85,9 +85,9 @@ PrinceJS.Kid.prototype.CMD_TAP = function (data) {
     return;
   }
   if (data.p1 === 1) {
-    this.game.sound.play("Footsteps");
+    this.scene.sound.play("Footsteps");
   } else if (data.p1 === 2) {
-    this.game.sound.play("BumpIntoWallHard");
+    this.scene.sound.play("BumpIntoWallHard");
   }
 };
 
@@ -111,24 +111,28 @@ PrinceJS.Kid.prototype.CMD_NEXTLEVEL = function (data) {
   PrinceJS.maxHealth = this.maxHealth;
   let waitTime = 0;
   if (PrinceJS.currentLevel === 4) {
-    this.game.sound.play("TheShadow");
+    this.scene.sound.play("TheShadow");
     waitTime = 9000;
   } else if (PrinceJS.currentLevel < 13) {
-    this.game.sound.play("Prince");
+    this.scene.sound.play("Prince");
     waitTime = 13000;
   }
-  PrinceJS.Utils.delayed(() => {
-    this.onNextLevel.dispatch(PrinceJS.currentLevel);
-  }, waitTime);
+  PrinceJS.Utils.delayed(
+    this.scene,
+    () => {
+      this.onNextLevel.dispatch(PrinceJS.currentLevel);
+    },
+    waitTime
+  );
 };
 
 PrinceJS.Kid.prototype.showShadowOverlay = function () {
-  this.shadowOverlay = this.game.make.sprite(0, 0, "shadow", "shadow-15");
-  this.shadowOverlay.anchor.setTo(0, 1);
-  this.addChild(this.shadowOverlay);
+  this.shadowOverlay = PrinceJS.Utils.image(this.scene, 0, 0, "shadow", "shadow-15");
+  PrinceJS.Utils.anchor(this.shadowOverlay, 0, 1);
+  this.attach(this.shadowOverlay, 0, 0);
   this.delegate = {
     syncFrame: (actor) => {
-      this.shadowOverlay.frameName = "shadow-" + actor.frameName.split("-")[1];
+      this.shadowOverlay.setFrame("shadow-" + actor.frame.name.split("-")[1]);
     },
     syncFace: (actor) => {
       this.shadowOverlay.charFace = actor.charFace;
@@ -165,44 +169,48 @@ PrinceJS.Kid.prototype.drinkPotion = function () {
   if (tile.element !== PrinceJS.Level.TILE_POTION) {
     tile = this.level.getTileAt(this.charBlockX, this.charBlockY, this.room);
   }
-  this.game.sound.play("DrinkPotionGlugGlug");
+  this.scene.sound.play("DrinkPotionGlugGlug");
   this.action = "drinkpotion";
   this.pickupPotion = false;
   this.allowCrawl = true;
   let potionType = tile.modifier;
   this.level.removeObject(tile.roomX, tile.roomY, tile.room);
-  PrinceJS.Utils.delayed(() => {
-    switch (potionType) {
-      case PrinceJS.Level.POTION_RECOVER:
-        PrinceJS.Utils.flashRedPotion(this.game);
-        this.game.sound.play("Potion1");
-        this.recoverLife();
-        break;
-      case PrinceJS.Level.POTION_ADD:
-        PrinceJS.Utils.flashRedPotion(this.game);
-        this.game.sound.play("Potion2");
-        this.addLife();
-        break;
-      case PrinceJS.Level.POTION_BUFFER:
-        PrinceJS.Utils.flashGreenPotion(this.game);
-        this.floatFall();
-        break;
-      case PrinceJS.Level.POTION_FLIP:
-        this.flipScreen();
-        break;
-      case PrinceJS.Level.POTION_DAMAGE:
-        PrinceJS.Utils.flashRedPotion(this.game);
-        this.game.sound.play("StabbedByOpponent");
-        this.damageLife();
-        break;
-    }
-  }, 1000);
+  PrinceJS.Utils.delayed(
+    this.scene,
+    () => {
+      switch (potionType) {
+        case PrinceJS.Level.POTION_RECOVER:
+          PrinceJS.Utils.flashRedPotion(this.scene);
+          this.scene.sound.play("Potion1");
+          this.recoverLife();
+          break;
+        case PrinceJS.Level.POTION_ADD:
+          PrinceJS.Utils.flashRedPotion(this.scene);
+          this.scene.sound.play("Potion2");
+          this.addLife();
+          break;
+        case PrinceJS.Level.POTION_BUFFER:
+          PrinceJS.Utils.flashGreenPotion(this.scene);
+          this.floatFall();
+          break;
+        case PrinceJS.Level.POTION_FLIP:
+          this.flipScreen();
+          break;
+        case PrinceJS.Level.POTION_DAMAGE:
+          PrinceJS.Utils.flashRedPotion(this.scene);
+          this.scene.sound.play("StabbedByOpponent");
+          this.damageLife();
+          break;
+      }
+    },
+    1000
+  );
 };
 
 PrinceJS.Kid.prototype.gotSword = function () {
   this.action = "pickupsword";
-  PrinceJS.Utils.flashYellowSword(this.game);
-  this.game.sound.play("Victory");
+  PrinceJS.Utils.flashYellowSword(this.scene);
+  this.scene.sound.play("Victory");
   this.pickupSword = false;
   this.allowCrawl = true;
   this.level.removeObject(this.charBlockX + this.charFace, this.charBlockY, this.room);
@@ -650,11 +658,13 @@ PrinceJS.Kid.prototype.checkBarrier = function () {
 };
 
 PrinceJS.Kid.prototype.getCharBoundsAbs = function () {
-  return new Phaser.Rectangle(this.x, this.y - this.height, this.width, this.height);
+  let width = PrinceJS.Utils.width(this);
+  let height = PrinceJS.Utils.height(this);
+  return new Phaser.Geom.Rectangle(this.x, this.y - height, width, height);
 };
 
 PrinceJS.Kid.prototype.getCharBounds = function () {
-  let f = this.game.cache.getFrameData("kid").getFrameByName("kid-" + this.charFrame);
+  let f = this.scene.textures.getFrame("kid", "kid-" + this.charFrame);
 
   let x = PrinceJS.Utils.convertX(this.charX + this.charFdx * this.charFace);
   let y = this.charY + this.charFdy - f.height;
@@ -667,7 +677,7 @@ PrinceJS.Kid.prototype.getCharBounds = function () {
     x += 1;
   }
 
-  return new Phaser.Rectangle(x, y, f.width, f.height);
+  return new Phaser.Geom.Rectangle(x, y, f.width, f.height);
 };
 
 PrinceJS.Kid.prototype.bump = function () {
@@ -717,7 +727,7 @@ PrinceJS.Kid.prototype.setBump = function () {
 
 PrinceJS.Kid.prototype.bumpSound = function () {
   if (this.bumpTimer === 0) {
-    this.game.sound.play("BumpIntoWallSoft");
+    this.scene.sound.play("BumpIntoWallSoft");
     this.bumpTimer = 10;
   }
 };
@@ -854,7 +864,7 @@ PrinceJS.Kid.prototype.checkFloor = function () {
                 ["running", "runjump", "runturn", "softland", "medland"].includes(this.action)) ||
               (this.action === "standjump" && this.frameID(26, 28))
             ) {
-              this.game.sound.play("SpikedBySpikes"); // HardLandingSplat
+              this.scene.sound.play("SpikedBySpikes"); // HardLandingSplat
               this.alignToTile(tile);
               this.dieSpikes();
             }
@@ -940,7 +950,7 @@ PrinceJS.Kid.prototype.checkRoomChange = function () {
 PrinceJS.Kid.prototype.maskAndCrop = function () {
   // Mask climbing
   if (this.faceR() && this.charFrame > 134 && this.charFrame < 145) {
-    this.frameName += "r";
+    PrinceJS.Utils.setFrame(this, this.frame.name + "r");
   }
 
   // Mask hanging
@@ -961,17 +971,27 @@ PrinceJS.Kid.prototype.maskAndCrop = function () {
 
   // Crop in jumpup
   if (this.recoverCrop) {
-    this.crop(null);
+    PrinceJS.Utils.crop(this, null);
     this.recoverCrop = false;
   }
 
   if (this.inJumpUp && this.frameID(78, 79)) {
-    this.crop(new Phaser.Rectangle(0, 7, -this.width * this.charFace, this.height));
+    PrinceJS.Utils.crop(this, {
+      x: 0,
+      y: 7,
+      width: -PrinceJS.Utils.width(this) * this.charFace,
+      height: PrinceJS.Utils.height(this)
+    });
   }
 
   if (this.inJumpUp && this.frameID(81)) {
-    this.crop(null);
-    this.crop(new Phaser.Rectangle(0, 3, -this.width * this.charFace, this.height));
+    PrinceJS.Utils.crop(this, null);
+    PrinceJS.Utils.crop(this, {
+      x: 0,
+      y: 3,
+      width: -PrinceJS.Utils.width(this) * this.charFace,
+      height: PrinceJS.Utils.height(this)
+    });
     this.inJumpUp = false;
     this.recoverCrop = true;
   }
@@ -1039,7 +1059,7 @@ PrinceJS.Kid.prototype.mergeShadowPosition = function () {
   this.opponent = null;
   shadow.opponent = null;
   shadow.action = "stand";
-  shadow.setInvisible();
+  shadow.hide();
   this.charX = shadow.charX;
   this.charY = shadow.charY;
   this.charFdx = shadow.charFdx;
@@ -1063,7 +1083,7 @@ PrinceJS.Kid.prototype.turn = function () {
     this.action = "turndraw";
     this.flee = false;
     if (!this.swordDrawn) {
-      this.game.sound.play("UnsheatheSword");
+      this.scene.sound.play("UnsheatheSword");
     }
     this.swordDrawn = true;
   } else {
@@ -1120,7 +1140,7 @@ PrinceJS.Kid.prototype.land = function () {
 
   let tile = this.level.getTileAt(this.charBlockX, this.charBlockY, this.room);
   if (tile.element === PrinceJS.Level.TILE_SPIKES) {
-    this.game.sound.play("SpikedBySpikes"); // HardLandingSplat
+    this.scene.sound.play("SpikedBySpikes"); // HardLandingSplat
     this.alignToTile(tile);
     this.dieSpikes();
   } else {
@@ -1132,15 +1152,15 @@ PrinceJS.Kid.prototype.land = function () {
         } else {
           this.action = "softland";
         }
-        this.game.sound.play("SoftLanding");
+        this.scene.sound.play("SoftLanding");
         break;
       case 2:
         this.action = "medland";
-        this.game.sound.play("MediumLandingOof");
+        this.scene.sound.play("MediumLandingOof");
         this.damageLife(true);
         break;
       default:
-        this.game.sound.play("FreeFallLand");
+        this.scene.sound.play("FreeFallLand");
         this.die("falldead");
     }
   }
@@ -1424,7 +1444,7 @@ PrinceJS.Kid.prototype.climbstairs = function () {
 
   if (this.faceR()) {
     this.charFace *= -1;
-    this.scale.x *= -1;
+    this.scaleX *= -1;
   }
 
   this.charX = PrinceJS.Utils.convertBlockXtoX(this.charBlockX) + 3;
@@ -1494,9 +1514,9 @@ PrinceJS.Kid.prototype.damageLife = function (crouch = false) {
     return;
   }
   this.showSplash();
-  PrinceJS.Utils.flashRedDamage(this.game);
+  PrinceJS.Utils.flashRedDamage(this.scene);
   if (crouch) {
-    this.splash.y = -5;
+    this.splash.offsetY = -5;
   }
   if (this.health > 1) {
     this.health -= 1;
@@ -1526,10 +1546,14 @@ PrinceJS.Kid.prototype.flipScreen = function () {
 
 PrinceJS.Kid.prototype.floatFall = function () {
   this.inFloat = true;
-  this.game.sound.play("Float");
-  PrinceJS.Utils.delayed(() => {
-    this.inFloat = false;
-  }, 20000);
+  this.scene.sound.play("Float");
+  PrinceJS.Utils.delayed(
+    this.scene,
+    () => {
+      this.inFloat = false;
+    },
+    20000
+  );
 };
 
 PrinceJS.Kid.prototype.damageStruck = function () {
@@ -1544,14 +1568,18 @@ PrinceJS.Kid.prototype.damageStruck = function () {
 };
 
 PrinceJS.Kid.prototype.proceedOnDead = function () {
-  PrinceJS.Utils.delayed(() => {
-    if (this.game) {
-      if (this.opponent && this.opponent.baseCharName === "jaffar") {
-        this.game.sound.play("HeroicDeath");
-      } else {
-        this.game.sound.play("Accident");
+  PrinceJS.Utils.delayed(
+    this.scene,
+    () => {
+      if (this.scene) {
+        if (this.opponent && this.opponent.baseCharName === "jaffar") {
+          this.scene.sound.play("HeroicDeath");
+        } else {
+          this.scene.sound.play("Accident");
+        }
+        this.onDead.dispatch();
       }
-      this.onDead.dispatch();
-    }
-  }, 1000);
+    },
+    1000
+  );
 };

@@ -1,38 +1,40 @@
 import PrinceJS from "./PrinceJS.js";
 
-PrinceJS.Enemy = function (game, level, location, direction, room, skill, color, key, id) {
-  this.baseCharName = key;
-  if (key === "guard") {
-    key = "guard-" + color;
-  }
-  PrinceJS.Fighter.call(this, game, level, location, direction, room, key, key === "shadow" ? "shadow" : "fighter");
+PrinceJS.Enemy = class extends PrinceJS.Fighter {
+  constructor(scene, level, location, direction, room, skill, color, key, id) {
+    let baseCharName = key;
+    if (key === "guard") {
+      key = "guard-" + color;
+    }
+    super(scene, level, location, direction, room, key, key === "shadow" ? "shadow" : "fighter", baseCharName);
 
-  this.id = id;
-  this.charX += direction * 7;
+    this.id = id;
+    this.charX += direction * 7;
 
-  this.strikeProbability = PrinceJS.Enemy.STRIKE_PROBABILITY[skill];
-  this.restrikeProbability = PrinceJS.Enemy.RESTRIKE_PROBABILITY[skill];
-  this.blockProbability = PrinceJS.Enemy.BLOCK_PROBABILITY[skill];
-  this.impairblockProbability = PrinceJS.Enemy.IMPAIRBLOCK_PROBABILITY[skill];
-  this.advanceProbability = PrinceJS.Enemy.ADVANCE_PROBABILITY[skill];
+    this.strikeProbability = PrinceJS.Enemy.STRIKE_PROBABILITY[skill];
+    this.restrikeProbability = PrinceJS.Enemy.RESTRIKE_PROBABILITY[skill];
+    this.blockProbability = PrinceJS.Enemy.BLOCK_PROBABILITY[skill];
+    this.impairblockProbability = PrinceJS.Enemy.IMPAIRBLOCK_PROBABILITY[skill];
+    this.advanceProbability = PrinceJS.Enemy.ADVANCE_PROBABILITY[skill];
 
-  this.refracTimer = 0;
-  this.blockTimer = 0;
-  this.strikeTimer = 0;
-  this.lookBelow = false;
-  this.startFight = false;
+    this.refracTimer = 0;
+    this.blockTimer = 0;
+    this.strikeTimer = 0;
+    this.lookBelow = false;
+    this.startFight = false;
 
-  this.health = PrinceJS.Enemy.EXTRA_STRENGTH[skill] + PrinceJS.Enemy.STRENGTH[this.level.number];
+    this.health = PrinceJS.Enemy.EXTRA_STRENGTH[skill] + PrinceJS.Enemy.STRENGTH[this.level.number];
 
-  this.charSkill = skill;
-  this.charColor = color;
+    this.charSkill = skill;
+    this.charColor = color;
 
-  this.onDamageLife.add(this.resetRefracTimer, this);
-  this.onStrikeBlocked.add(this.resetBlockTimer, this);
-  this.onEnemyStrike.add(this.resetStrikeTimer, this);
+    this.onDamageLife.add(this.resetRefracTimer, this);
+    this.onStrikeBlocked.add(this.resetBlockTimer, this);
+    this.onEnemyStrike.add(this.resetStrikeTimer, this);
 
-  if (this.charColor > 0) {
-    this.tintSplash(PrinceJS.Enemy.COLOR[this.charColor - 1]);
+    if (this.charColor > 0) {
+      this.tintSplash(PrinceJS.Enemy.COLOR[this.charColor - 1]);
+    }
   }
 };
 
@@ -45,9 +47,6 @@ PrinceJS.Enemy.REFRAC_TIMER = [16, 16, 16, 16, 8, 8, 8, 8, 0, 8, 0, 0];
 PrinceJS.Enemy.EXTRA_STRENGTH = [0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0];
 PrinceJS.Enemy.STRENGTH = [4, 3, 3, 3, 3, 4, 5, 4, 4, 5, 5, 5, 4, 6, 10, 0];
 PrinceJS.Enemy.COLOR = [0x4890fc, 0xa83000, 0xfc5000, 0x0c9000, 0x5a00fc, 0xc858fc, 0xfcfc00];
-
-PrinceJS.Enemy.prototype = Object.create(PrinceJS.Fighter.prototype);
-PrinceJS.Enemy.prototype.constructor = PrinceJS.Enemy;
 
 PrinceJS.Enemy.prototype.updateActor = function () {
   this.updateSplash();
@@ -73,9 +72,9 @@ PrinceJS.Enemy.prototype.CMD_TAP = function (data) {
     return;
   }
   if (data.p1 === 1) {
-    this.game.sound.play("Footsteps");
+    this.scene.sound.play("Footsteps");
   } else if (data.p1 === 2) {
-    this.game.sound.play("BumpIntoWallHard");
+    this.scene.sound.play("BumpIntoWallHard");
   }
 };
 
@@ -87,11 +86,15 @@ PrinceJS.Enemy.prototype.updateBehaviour = function () {
     return;
   }
   if (this.active && !this.startFight && this.opponentCloseRoom(this.opponent, this.room)) {
-    PrinceJS.Utils.delayed(() => {
-      if (this.active && !this.startFight && this.opponentCloseRoom(this.opponent, this.room)) {
-        this.startFight = true;
-      }
-    }, 500);
+    PrinceJS.Utils.delayed(
+      this.scene,
+      () => {
+        if (this.active && !this.startFight && this.opponentCloseRoom(this.opponent, this.room)) {
+          this.startFight = true;
+        }
+      },
+      500
+    );
   }
 
   if (this.refracTimer > 0) {
@@ -253,7 +256,7 @@ PrinceJS.Enemy.prototype.oppInRangeArmed = function (distance) {
 
 PrinceJS.Enemy.prototype.tryAdvance = function () {
   if (this.charSkill === 0 || this.strikeTimer === 0) {
-    if (this.advanceProbability > this.game.rnd.between(0, 254)) {
+    if (this.advanceProbability > PrinceJS.Utils.between(0, 254)) {
       this.advance();
     }
   }
@@ -267,11 +270,11 @@ PrinceJS.Enemy.prototype.tryBlock = function () {
     this.opponent.frameID(12)
   ) {
     if (this.blockTimer !== 0) {
-      if (this.impairblockProbability > this.game.rnd.between(0, 254)) {
+      if (this.impairblockProbability > PrinceJS.Utils.between(0, 254)) {
         this.block();
       }
     } else {
-      if (this.blockProbability > this.game.rnd.between(0, 254)) {
+      if (this.blockProbability > PrinceJS.Utils.between(0, 254)) {
         this.block();
       }
     }
@@ -288,11 +291,11 @@ PrinceJS.Enemy.prototype.tryStrike = function () {
     return;
   }
   if (this.frameID(150)) {
-    if (this.restrikeProbability > this.game.rnd.between(0, 254)) {
+    if (this.restrikeProbability > PrinceJS.Utils.between(0, 254)) {
       this.strike();
     }
   } else {
-    if (this.strikeProbability > this.game.rnd.between(0, 254)) {
+    if (this.strikeProbability > PrinceJS.Utils.between(0, 254)) {
       this.strike();
     }
   }
@@ -312,31 +315,31 @@ PrinceJS.Enemy.prototype.resetStrikeTimer = function () {
 
 PrinceJS.Enemy.prototype.fastsheathe = function () {
   if (this.charName === "shadow") {
-    this.setInactive();
+    this.deactivate();
     this.action = "fastsheathe";
     this.swordDrawn = false;
   }
 };
 
-PrinceJS.Enemy.prototype.setVisible = function () {
+PrinceJS.Enemy.prototype.show = function () {
   this.visible = true;
   this.sword.visible = true;
 };
 
-PrinceJS.Enemy.prototype.setInvisible = function () {
+PrinceJS.Enemy.prototype.hide = function () {
   this.visible = false;
   this.sword.visible = false;
 };
 
-PrinceJS.Enemy.prototype.setActive = function () {
-  this.setVisible();
+PrinceJS.Enemy.prototype.activate = function () {
+  this.show();
   this.active = true;
   if (this.charName === "skeleton") {
     this.action = "arise";
   }
 };
 
-PrinceJS.Enemy.prototype.setInactive = function () {
+PrinceJS.Enemy.prototype.deactivate = function () {
   this.active = false;
   this.startFight = false;
   if (this.charName === "skeleton") {
@@ -352,5 +355,5 @@ PrinceJS.Enemy.prototype.appearOutOfMirror = function (mirror) {
   this.updateBlockXY();
   this.updateCharPosition();
   this.processCommand();
-  this.setVisible();
+  this.show();
 };

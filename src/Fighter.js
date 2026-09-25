@@ -1,88 +1,90 @@
 import PrinceJS from "./PrinceJS.js";
 
-PrinceJS.Fighter = function (game, level, location, direction, room, key, animKey) {
-  this.level = level;
-  this.room = room;
+PrinceJS.Fighter = class extends PrinceJS.Actor {
+  constructor(scene, level, location, direction, room, key, animKey, baseCharName) {
+    let charBlockX = location % 10;
+    let charBlockY = Math.floor(location / 10);
 
-  this.charBlockX = location % 10;
-  this.charBlockY = Math.floor(location / 10);
+    let x = PrinceJS.Utils.convertBlockXtoX(charBlockX);
+    let y = PrinceJS.Utils.convertBlockYtoY(charBlockY);
 
-  let x = PrinceJS.Utils.convertBlockXtoX(this.charBlockX);
-  let y = PrinceJS.Utils.convertBlockYtoY(this.charBlockY);
+    super(scene, x, y, direction, key, animKey);
 
-  PrinceJS.Actor.call(this, game, x, y, direction, key, animKey);
+    this.level = level;
+    this.room = room;
 
-  this.charXVel = 0;
-  this.charYVel = 0;
-  this.actionCode = 1;
+    this.charBlockX = charBlockX;
+    this.charBlockY = charBlockY;
 
-  this.charSword = true;
+    this.baseCharName = baseCharName;
 
-  this.flee = false;
-  this.allowAdvance = true;
-  this.allowRetreat = true;
-  this.allowBlock = true;
-  this.allowStrike = true;
-  this.inJumpUp = false;
-  this.inFallDown = false;
-  this.inFloat = false;
-  this.fallingBlocks = 0;
+    this.charXVel = 0;
+    this.charYVel = 0;
+    this.actionCode = 1;
 
-  this.swordFrame = 0;
-  this.swordDx = 0;
-  this.swordDy = 0;
+    this.charSword = true;
 
-  if (this.charName !== "skeleton") {
-    this.splash = this.game.make.sprite(0, 0, "general", (this.baseCharName || this.charName) + "-splash");
-    this.splash.anchor.set(0, 1);
-    this.splash.x = -6;
-    this.splash.y = -15;
-    this.splash.visible = false;
-    this.addChild(this.splash);
-    this.splashTimer = 0;
+    this.flee = false;
+    this.allowAdvance = true;
+    this.allowRetreat = true;
+    this.allowBlock = true;
+    this.allowStrike = true;
+    this.inJumpUp = false;
+    this.inFallDown = false;
+    this.inFloat = false;
+    this.fallingBlocks = 0;
+
+    this.swordFrame = 0;
+    this.swordDx = 0;
+    this.swordDy = 0;
+
+    if (this.charName !== "skeleton") {
+      this.splash = PrinceJS.Utils.image(this.scene, 0, 0, "general", (this.baseCharName || this.charName) + "-splash");
+      PrinceJS.Utils.anchor(this.splash, 0, 1);
+      this.splash.visible = false;
+      this.attach(this.splash, -6, -15);
+      this.splashTimer = 0;
+    }
+
+    this.sword = PrinceJS.Utils.image(this.scene, 0, 0, "general");
+    this.sword.scaleX *= -this.charFace;
+    PrinceJS.Utils.anchor(this.sword, 0, 1);
+
+    this.scene.add.existing(this.sword);
+
+    this.hasSword = true;
+    this.sword.setDepth(21);
+
+    this.updateBase();
+
+    this.swordAnims = this.scene.cache.json.get("sword-anims");
+
+    this.registerCommand(0xf8, this.CMD_SETFALL); // 248
+    this.registerCommand(0xf9, this.CMD_ACT); // 249
+    this.registerCommand(0xf6, this.CMD_DIE); // 246
+
+    this.opponent = null;
+    this.active = true;
+    this.startFight = true;
+
+    this.health = 3;
+    this.alive = true;
+    this.swordDrawn = false;
+    this.blocked = false;
+
+    this.onInitLife = new PrinceJS.Signal();
+    this.onDamageLife = new PrinceJS.Signal();
+    this.onDead = new PrinceJS.Signal();
+    this.onStrikeBlocked = new PrinceJS.Signal();
+    this.onEnemyStrike = new PrinceJS.Signal();
+    this.onChangeRoom = new PrinceJS.Signal();
   }
-
-  this.sword = this.game.make.sprite(0, 0, "general");
-  this.sword.scale.x *= -this.charFace;
-  this.sword.anchor.setTo(0, 1);
-
-  this.game.add.existing(this.sword);
-
-  this.hasSword = true;
-  this.sword.z = 21;
-
-  this.updateBase();
-
-  this.swordAnims = this.game.cache.getJSON("sword-anims");
-
-  this.registerCommand(0xf8, this.CMD_SETFALL); // 248
-  this.registerCommand(0xf9, this.CMD_ACT); // 249
-  this.registerCommand(0xf6, this.CMD_DIE); // 246
-
-  this.opponent = null;
-  this.active = true;
-  this.startFight = true;
-
-  this.health = 3;
-  this.alive = true;
-  this.swordDrawn = false;
-  this.blocked = false;
-
-  this.onInitLife = new Phaser.Signal();
-  this.onDamageLife = new Phaser.Signal();
-  this.onDead = new Phaser.Signal();
-  this.onStrikeBlocked = new Phaser.Signal();
-  this.onEnemyStrike = new Phaser.Signal();
-  this.onChangeRoom = new Phaser.Signal();
 };
 
 PrinceJS.Fighter.GRAVITY = 3;
 PrinceJS.Fighter.GRAVITY_FLOAT = 1;
 PrinceJS.Fighter.TOP_SPEED = 33;
 PrinceJS.Fighter.TOP_SPEED_FLOAT = 4;
-
-PrinceJS.Fighter.prototype = Object.create(PrinceJS.Actor.prototype);
-PrinceJS.Fighter.prototype.constructor = PrinceJS.Fighter;
 
 PrinceJS.Fighter.prototype.CMD_SETFALL = function (data) {
   this.charXVel = data.p1 * this.charFace;
@@ -95,14 +97,18 @@ PrinceJS.Fighter.prototype.CMD_DIE = function (data) {
   this.showSplash();
   this.proceedOnDead();
   if (this.charName !== "kid") {
-    PrinceJS.Utils.delayed(() => {
-      if (this.baseCharName === "jaffar") {
-        this.game.sound.play("JaffarDead");
-        PrinceJS.Utils.flashWhiteVizierVictory(this.game);
-      } else if (this.baseCharName !== "shadow") {
-        this.game.sound.play("Victory");
-      }
-    }, 200);
+    PrinceJS.Utils.delayed(
+      this.scene,
+      () => {
+        if (this.baseCharName === "jaffar") {
+          this.scene.sound.play("JaffarDead");
+          PrinceJS.Utils.flashWhiteVizierVictory(this.scene);
+        } else if (this.baseCharName !== "shadow") {
+          this.scene.sound.play("Victory");
+        }
+      },
+      200
+    );
   }
 };
 
@@ -124,8 +130,9 @@ PrinceJS.Fighter.prototype.CMD_FRAME = function (data) {
 
 PrinceJS.Fighter.prototype.changeFace = function () {
   this.charFace *= -1;
-  this.scale.x *= -1;
-  this.sword.scale.x *= -1;
+  this.scaleX *= -1;
+  this.sword.scaleX *= -1;
+  this.syncAttachments();
 
   if (this.delegate) {
     this.delegate.syncFace(this);
@@ -140,7 +147,7 @@ PrinceJS.Fighter.prototype.updateBase = function () {
 };
 
 PrinceJS.Fighter.prototype.updateSwordFrame = function () {
-  let framedef = this.anims.framedef[this.charFrame];
+  let framedef = this.charAnims.framedef[this.charFrame];
 
   this.charSword = typeof framedef.fsword !== "undefined";
 
@@ -204,7 +211,7 @@ PrinceJS.Fighter.prototype.updateFallingBlocks = function (charBlockY, charBlock
   }
 
   if (this.charName === "kid" && this.fallingBlocks === 5) {
-    this.game.sound.play("FallingFloorLands");
+    this.scene.sound.play("FallingFloorLands");
   }
 };
 
@@ -275,7 +282,7 @@ PrinceJS.Fighter.prototype.checkFight = function () {
         }
       } else {
         if (this.charFrame !== "kid") {
-          this.game.sound.play("SwordClash");
+          this.scene.sound.play("SwordClash");
         }
 
         this.opponent.blocked = true;
@@ -295,7 +302,7 @@ PrinceJS.Fighter.prototype.checkFight = function () {
 
 PrinceJS.Fighter.prototype.updateSwordPosition = function () {
   if (this.charSword) {
-    this.sword.frameName = "sword" + this.swordFrame;
+    this.sword.setFrame("sword" + this.swordFrame);
     this.sword.x = this.x + this.swordDx * this.charFace;
     this.sword.y = this.y + this.swordDy;
   }
@@ -392,7 +399,7 @@ PrinceJS.Fighter.prototype.engarde = function () {
   this.alignToFloor();
 
   if (this.charName === "kid") {
-    this.game.sound.play("UnsheatheSword");
+    this.scene.sound.play("UnsheatheSword");
   }
 
   if (this.onInitLife) {
@@ -416,7 +423,7 @@ PrinceJS.Fighter.prototype.turnengarde = function () {
   let begin = Math.abs(this.opponentDistance()) > 10;
   this.action = (this.charName === "kid" && begin ? "begin" : "") + "turnengarde";
   if (!this.swordDrawn && this.charName === "kid") {
-    this.game.sound.play("UnsheatheSword");
+    this.scene.sound.play("UnsheatheSword");
   }
   this.swordDrawn = true;
   this.alignToFloor();
@@ -453,7 +460,7 @@ PrinceJS.Fighter.prototype.strike = function () {
   }
 
   if (this.charName === "kid" && this.frameID(157, 158)) {
-    this.game.sound.play("StabAir");
+    this.scene.sound.play("StabAir");
   }
 
   if (
@@ -505,9 +512,9 @@ PrinceJS.Fighter.prototype.stabbed = function () {
   }
 
   if (this.charName === "kid") {
-    this.game.sound.play("StabbedByOpponent");
+    this.scene.sound.play("StabbedByOpponent");
   } else {
-    this.game.sound.play("StabOpponent");
+    this.scene.sound.play("StabOpponent");
   }
 
   if (this.health === 0) {
@@ -640,8 +647,8 @@ PrinceJS.Fighter.prototype.nearBarrier = function (charBlockX, charBlockY) {
 
   return (
     tileF.element === PrinceJS.Level.TILE_WALL ||
-    (tileF.element === PrinceJS.Level.TILE_GATE && this.faceL() && !tileF.canCross(this.height)) ||
-    (tile.element === PrinceJS.Level.TILE_GATE && this.faceR() && !tile.canCross(this.height)) ||
+    (tileF.element === PrinceJS.Level.TILE_GATE && this.faceL() && !tileF.canCross(PrinceJS.Utils.height(this))) ||
+    (tile.element === PrinceJS.Level.TILE_GATE && this.faceR() && !tile.canCross(PrinceJS.Utils.height(this))) ||
     (tile.element === PrinceJS.Level.TILE_TAPESTRY && this.faceR()) ||
     (tileF.element === PrinceJS.Level.TILE_TAPESTRY && this.faceL()) ||
     (tileF.element === PrinceJS.Level.TILE_TAPESTRY_TOP && this.faceL())
@@ -658,8 +665,8 @@ PrinceJS.Fighter.prototype.canCrossGate = function (tile) {
   let tileF = this.level.getTileAt(tile.roomX + this.charFace, tile.roomY, this.room);
 
   return !(
-    (tileF.element === PrinceJS.Level.TILE_GATE && this.faceL() && !tileF.canCross(this.height)) ||
-    (tile.element === PrinceJS.Level.TILE_GATE && this.faceR() && !tile.canCross(this.height))
+    (tileF.element === PrinceJS.Level.TILE_GATE && this.faceL() && !tileF.canCross(PrinceJS.Utils.height(this))) ||
+    (tile.element === PrinceJS.Level.TILE_GATE && this.faceR() && !tile.canCross(PrinceJS.Utils.height(this)))
   );
 };
 
@@ -822,7 +829,7 @@ PrinceJS.Fighter.prototype.updateSplash = function () {
     this.splashTimer--;
     if (this.splashTimer === 0) {
       this.splash.visible = false;
-      this.splash.y = -15;
+      this.splash.offsetY = -15;
     }
   }
 };
@@ -875,7 +882,7 @@ PrinceJS.Fighter.prototype.checkFloor = function () {
 
           case PrinceJS.Level.TILE_SPIKES:
             tile.raise();
-            this.game.sound.play("SpikedBySpikes"); // HardLandingSplat
+            this.scene.sound.play("SpikedBySpikes"); // HardLandingSplat
             this.alignToTile(tile);
             this.dieSpikes();
             break;
@@ -943,7 +950,7 @@ PrinceJS.Fighter.prototype.land = function () {
 
   let tile = this.level.getTileAt(this.charBlockX, this.charBlockY, this.room);
   if (tile.element === PrinceJS.Level.TILE_SPIKES) {
-    this.game.sound.play("SpikedBySpikes"); // HardLandingSplat
+    this.scene.sound.play("SpikedBySpikes"); // HardLandingSplat
     this.alignToTile(tile);
     this.dieSpikes();
   } else {
@@ -953,7 +960,7 @@ PrinceJS.Fighter.prototype.land = function () {
         this.action = this.charName === "shadow" ? "softlandStandup" : "stand";
         break;
       default:
-        this.game.sound.play("FreeFallLand");
+        this.scene.sound.play("FreeFallLand");
         this.die("falldead");
         break;
     }
@@ -1039,11 +1046,11 @@ PrinceJS.Fighter.prototype.tryChoppers = function (x, y) {
       tile.showBlood();
       if (this.alive) {
         this.dieChopper();
-        this.game.sound.play("HalvedByChopper");
+        this.scene.sound.play("HalvedByChopper");
         this.alignToTile(tile);
         this.charX += this.faceL() ? -5 : -9;
         if (this.charName === "kid") {
-          PrinceJS.Utils.flashRedDamage(this.game);
+          PrinceJS.Utils.flashRedDamage(this.scene);
         }
       }
     }
@@ -1074,7 +1081,7 @@ PrinceJS.Fighter.prototype.damageLife = function () {
   }
 
   if (this.charName === "shadow") {
-    PrinceJS.Utils.flashRedDamage(this.game);
+    PrinceJS.Utils.flashRedDamage(this.scene);
   }
   this.showSplash();
   if (this.health > 1) {

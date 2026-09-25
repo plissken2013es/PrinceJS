@@ -27,6 +27,7 @@ module.exports = defineConfig({
     // Tests run against the production build
     command: `npm run build && npx vite preview --port ${PORT} --strictPort`,
     url: `http://localhost:${PORT}/`,
-    reuseExistingServer: !process.env.CI
+    // Never test against a stale server that may be serving another build
+    reuseExistingServer: false
   }
 });

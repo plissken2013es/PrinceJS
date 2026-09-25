@@ -1,12 +1,12 @@
 import PrinceJS from "../PrinceJS.js";
 
-PrinceJS.Tile.Button = function (game, element, modifier, type) {
-  PrinceJS.Tile.Base.call(this, game, element, modifier, type);
+PrinceJS.Tile.Button = function (scene, element, modifier, type) {
+  PrinceJS.Tile.Base.call(this, scene, element, modifier, type);
 
   this.stepMax = element === PrinceJS.Level.TILE_RAISE_BUTTON ? 3 : 5;
   this.step = 0;
 
-  this.onPushed = new Phaser.Signal();
+  this.onPushed = new PrinceJS.Signal();
 
   this.active = false;
   this.mute = false;
@@ -25,7 +25,7 @@ PrinceJS.Tile.Button.prototype.update = function () {
       this.active = true;
       this.trigger();
       if (!this.mute) {
-        this.game.sound.play("FloorButton");
+        this.scene.sound.play("FloorButton");
       }
     }
     return;
@@ -36,7 +36,7 @@ PrinceJS.Tile.Button.prototype.update = function () {
       this.front.y = this.frontOriginalY;
       delete this.frontOriginalY;
 
-      this.back.frameName = this.key + "_" + this.element;
+      this.backSprite.setFrame(this.key + "_" + this.element);
       this.active = false;
     }
     this.step++;
@@ -49,10 +49,10 @@ PrinceJS.Tile.Button.prototype.push = function () {
     this.frontOriginalY = this.front.y;
     this.front.y += 1;
 
-    this.back.frameName += "_down";
+    this.backSprite.setFrame(this.backSprite.frame.name + "_down");
     this.trigger();
     if (!this.mute) {
-      this.game.sound.play("FloorButton");
+      this.scene.sound.play("FloorButton");
     }
   }
   this.step = 0;

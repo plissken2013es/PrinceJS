@@ -1,7 +1,8 @@
+import Phaser from "phaser";
 import PrinceJS from "./PrinceJS.js";
 
-PrinceJS.LevelBuilder = function (game, delegate) {
-  this.game = game;
+PrinceJS.LevelBuilder = function (scene, delegate) {
+  this.scene = scene;
   this.delegate = delegate;
 
   this.height;
@@ -24,9 +25,7 @@ PrinceJS.LevelBuilder.prototype = {
     this.height = json.size.height;
     this.type = json.type;
 
-    this.game.world.setBounds(0, 0, PrinceJS.WORLD_WIDTH * this.width, PrinceJS.WORLD_HEIGHT * this.height);
-
-    this.level = new PrinceJS.Level(this.game, json.number, json.name, this.type);
+    this.level = new PrinceJS.Level(this.scene, json.number, json.name, this.type);
     this.startRoomId = json.prince.room;
 
     let y, x, id, tile;
@@ -68,8 +67,8 @@ PrinceJS.LevelBuilder.prototype = {
 
         if (this.level.rooms[id].links.left === -1) {
           for (let jj = 2; jj >= 0; jj--) {
-            tile = new PrinceJS.Tile.Base(this.game, PrinceJS.Level.TILE_WALL, 0, this.type);
-            tile.back.frameName = tile.key + "_wall_0";
+            tile = new PrinceJS.Tile.Base(this.scene, PrinceJS.Level.TILE_WALL, 0, this.type);
+            tile.backSprite.setFrame(tile.key + "_wall_0");
             this.level.addTile(-1, jj, id, tile);
           }
         }
@@ -78,7 +77,7 @@ PrinceJS.LevelBuilder.prototype = {
 
         if (this.level.rooms[id].links.up === -1) {
           for (let ii = 0; ii < 10; ii++) {
-            tile = new PrinceJS.Tile.Base(this.game, PrinceJS.Level.TILE_FLOOR, 0, this.type);
+            tile = new PrinceJS.Tile.Base(this.scene, PrinceJS.Level.TILE_FLOOR, 0, this.type);
             this.level.addTile(ii, -1, id, tile);
           }
         }
@@ -106,7 +105,7 @@ PrinceJS.LevelBuilder.prototype = {
     let tile, tileChild, tileSeed, wallType, open;
     switch (t.element) {
       case PrinceJS.Level.TILE_WALL:
-        tile = new PrinceJS.Tile.Base(this.game, t.element, t.modifier, this.type);
+        tile = new PrinceJS.Tile.Base(this.scene, t.element, t.modifier, this.type);
 
         tileSeed = tileNumber + id;
         wallType = "";
@@ -126,60 +125,66 @@ PrinceJS.LevelBuilder.prototype = {
         }
 
         if (this.type === PrinceJS.Level.TYPE_DUNGEON) {
-          tile.front.frameName = wallType + "_" + tileSeed;
+          tile.frontSprite.setFrame(wallType + "_" + tileSeed);
         } else {
-          let bmd = this.game.make.bitmapData(60, 79);
+          // Palace walls: colored bricks drawn instead of the wall sprite, then the wall pattern on top
+          let bricks = new Phaser.GameObjects.Graphics(this.scene);
+          let brick = (bx, by, width, height, index) => {
+            let color = Phaser.Display.Color.HexStringToColor(this.wallColor[this.wallPattern[id][index]]);
+            bricks.fillStyle(color.color);
+            bricks.fillRect(bx, by, width, height);
+          };
+          brick(0, 16, 32, 20, y * 44 + x);
+          brick(0, 36, 16, 21, y * 44 + 11 + x);
+          brick(16, 36, 16, 21, y * 44 + 11 + x + 1);
+          brick(0, 57, 8, 19, y * 44 + 2 * 11 + x);
+          brick(8, 57, 24, 19, y * 44 + 2 * 11 + x + 1);
+          brick(0, 76, 32, 3, y * 44 + 3 * 11 + x);
+          tile.frontSprite.visible = false;
+          tile.front.add(bricks);
 
-          bmd.rect(0, 16, 32, 20, this.wallColor[this.wallPattern[id][y * 44 + x]]);
-          bmd.rect(0, 36, 16, 21, this.wallColor[this.wallPattern[id][y * 44 + 11 + x]]);
-          bmd.rect(16, 36, 16, 21, this.wallColor[this.wallPattern[id][y * 44 + 11 + x + 1]]);
-          bmd.rect(0, 57, 8, 19, this.wallColor[this.wallPattern[id][y * 44 + 2 * 11 + x]]);
-          bmd.rect(8, 57, 24, 19, this.wallColor[this.wallPattern[id][y * 44 + 2 * 11 + x + 1]]);
-          bmd.rect(0, 76, 32, 3, this.wallColor[this.wallPattern[id][y * 44 + 3 * 11 + x]]);
-          bmd.add(tile.front);
-
-          tileChild = this.game.make.sprite(0, 16, tile.key, "W_" + tileSeed);
-          tile.front.addChild(tileChild);
+          tileChild = PrinceJS.Utils.image(this.scene, 0, 16, tile.key, "W_" + tileSeed);
+          tile.front.add(tileChild);
         }
 
         if (wallType.charAt(2) === "S") {
-          tile.back.frameName = tile.key + "_wall_" + t.modifier;
+          tile.backSprite.setFrame(tile.key + "_wall_" + t.modifier);
         }
         break;
 
       case PrinceJS.Level.TILE_SPACE:
       case PrinceJS.Level.TILE_FLOOR:
-        tile = new PrinceJS.Tile.Base(this.game, t.element, t.modifier, this.type);
-        tileChild = this.game.make.sprite(0, 0, tile.key, tile.key + "_" + t.element + "_" + t.modifier);
-        tile.back.addChild(tileChild);
+        tile = new PrinceJS.Tile.Base(this.scene, t.element, t.modifier, this.type);
+        tileChild = PrinceJS.Utils.image(this.scene, 0, 0, tile.key, tile.key + "_" + t.element + "_" + t.modifier);
+        tile.back.add(tileChild);
         break;
 
       case PrinceJS.Level.TILE_RAISE_BUTTON:
       case PrinceJS.Level.TILE_DROP_BUTTON:
-        tile = new PrinceJS.Tile.Button(this.game, t.element, t.modifier, this.type);
+        tile = new PrinceJS.Tile.Button(this.scene, t.element, t.modifier, this.type);
         tile.onPushed.add(this.delegate.fireEvent, this.delegate);
         this.level.addTrob(tile);
         break;
 
       case PrinceJS.Level.TILE_TORCH:
       case PrinceJS.Level.TILE_TORCH_WITH_DEBRIS:
-        tile = new PrinceJS.Tile.Torch(this.game, t.element, t.modifier, this.type);
+        tile = new PrinceJS.Tile.Torch(this.scene, t.element, t.modifier, this.type);
         this.level.addTrob(tile);
         break;
 
       case PrinceJS.Level.TILE_POTION:
-        tile = new PrinceJS.Tile.Potion(this.game, t.modifier, this.type);
+        tile = new PrinceJS.Tile.Potion(this.scene, t.modifier, this.type);
         this.level.addTrob(tile);
         break;
 
       case PrinceJS.Level.TILE_SWORD:
-        tile = new PrinceJS.Tile.Sword(this.game, t.modifier, this.type);
+        tile = new PrinceJS.Tile.Sword(this.scene, t.modifier, this.type);
         this.level.addTrob(tile);
         break;
 
       case PrinceJS.Level.TILE_EXIT_RIGHT:
         open = id === startId;
-        tile = new PrinceJS.Tile.ExitDoor(this.game, t.modifier, this.type, open);
+        tile = new PrinceJS.Tile.ExitDoor(this.scene, t.modifier, this.type, open);
         this.level.addTrob(tile);
         if (open) {
           tile.drop();
@@ -187,37 +192,37 @@ PrinceJS.LevelBuilder.prototype = {
         break;
 
       case PrinceJS.Level.TILE_CHOPPER:
-        tile = new PrinceJS.Tile.Chopper(this.game, t.modifier, this.type);
+        tile = new PrinceJS.Tile.Chopper(this.scene, t.modifier, this.type);
         tile.onChopped.add(this.level.activateChopper, this.level);
         this.level.addTrob(tile);
         break;
 
       case PrinceJS.Level.TILE_SPIKES:
-        tile = new PrinceJS.Tile.Spikes(this.game, t.modifier, this.type);
+        tile = new PrinceJS.Tile.Spikes(this.scene, t.modifier, this.type);
         if (t.modifier === 0) {
           this.level.addTrob(tile);
         }
         break;
 
       case PrinceJS.Level.TILE_LOOSE_BOARD:
-        tile = new PrinceJS.Tile.Loose(this.game, t.modifier, this.type);
+        tile = new PrinceJS.Tile.Loose(this.scene, t.modifier, this.type);
         tile.onStartFalling.add(this.delegate.floorStartFall, this.delegate);
         tile.onStopFalling.add(this.delegate.floorStopFall, this.delegate);
         this.level.addTrob(tile);
         break;
 
       case PrinceJS.Level.TILE_SKELETON:
-        tile = new PrinceJS.Tile.Skeleton(this.game, t.modifier, this.type);
+        tile = new PrinceJS.Tile.Skeleton(this.scene, t.modifier, this.type);
         this.level.addTrob(tile);
         break;
 
       case PrinceJS.Level.TILE_MIRROR:
-        tile = new PrinceJS.Tile.Mirror(this.game, t.modifier, this.type);
+        tile = new PrinceJS.Tile.Mirror(this.scene, t.modifier, this.type);
         this.level.addTrob(tile);
         break;
 
       case PrinceJS.Level.TILE_GATE:
-        tile = new PrinceJS.Tile.Gate(this.game, t.modifier, this.type);
+        tile = new PrinceJS.Tile.Gate(this.scene, t.modifier, this.type);
         if (t.mute === false) {
           tile.setCanMute(false);
         }
@@ -225,39 +230,40 @@ PrinceJS.LevelBuilder.prototype = {
         break;
 
       case PrinceJS.Level.TILE_TAPESTRY:
-        tile = new PrinceJS.Tile.Base(this.game, t.element, t.modifier, this.type);
+        tile = new PrinceJS.Tile.Base(this.scene, t.element, t.modifier, this.type);
         if (this.type === PrinceJS.Level.TYPE_PALACE && t.modifier > 0) {
-          tile.back.frameName = tile.key + "_" + t.element + "_" + t.modifier;
-          tile.front.frameName = tile.back.frameName + "_fg";
+          tile.backSprite.setFrame(tile.key + "_" + t.element + "_" + t.modifier);
+          tile.frontSprite.setFrame(tile.backSprite.frame.name + "_fg");
         }
         break;
 
       case PrinceJS.Level.TILE_TAPESTRY_TOP:
-        tile = new PrinceJS.Tile.Base(this.game, t.element, t.modifier, this.type);
+        tile = new PrinceJS.Tile.Base(this.scene, t.element, t.modifier, this.type);
         if (this.type === PrinceJS.Level.TYPE_PALACE && t.modifier > 0) {
-          tile.back.frameName = tile.key + "_" + t.element + "_" + t.modifier;
-          tile.front.frameName = tile.back.frameName + "_fg";
+          tile.backSprite.setFrame(tile.key + "_" + t.element + "_" + t.modifier);
+          tile.frontSprite.setFrame(tile.backSprite.frame.name + "_fg");
 
           if (this.getTileAt(x - 1, y, id) === PrinceJS.Level.TILE_LATTICE_SUPPORT) {
-            tileChild = this.game.make.sprite(
+            tileChild = PrinceJS.Utils.image(
+              this.scene,
               0,
               0,
               tile.key,
               tile.key + "_" + PrinceJS.Level.TILE_SMALL_LATTICE + "_fg"
             );
-            tile.back.addChild(tileChild);
+            tile.back.add(tileChild);
           }
         }
         break;
 
       case PrinceJS.Level.TILE_BALCONY_RIGHT:
-        tile = new PrinceJS.Tile.Base(this.game, t.element, t.modifier, this.type);
-        tileChild = this.game.make.sprite(0, -4, tile.key, tile.key + "_balcony");
-        tile.back.addChild(tileChild);
+        tile = new PrinceJS.Tile.Base(this.scene, t.element, t.modifier, this.type);
+        tileChild = PrinceJS.Utils.image(this.scene, 0, -4, tile.key, tile.key + "_balcony");
+        tile.back.add(tileChild);
         break;
 
       default:
-        tile = new PrinceJS.Tile.Base(this.game, t.element, t.modifier, this.type);
+        tile = new PrinceJS.Tile.Base(this.scene, t.element, t.modifier, this.type);
         break;
     }
 

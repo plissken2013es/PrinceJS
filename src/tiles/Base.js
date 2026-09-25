@@ -1,9 +1,12 @@
+import Phaser from "phaser";
 import PrinceJS from "../PrinceJS.js";
 
 PrinceJS.Tile = {};
 
-PrinceJS.Tile.Base = function (game, element, modifier, type) {
-  this.game = game;
+// A tile is drawn in two parts: "back" behind the actors and "front" in front of them.
+// Each part is a container holding the tile sprite plus any decoration added on top.
+PrinceJS.Tile.Base = function (scene, element, modifier, type) {
+  this.scene = scene;
 
   this.element = element;
   this.modifier = modifier;
@@ -12,8 +15,10 @@ PrinceJS.Tile.Base = function (game, element, modifier, type) {
 
   this.key = type === PrinceJS.Level.TYPE_DUNGEON ? "dungeon" : "palace";
 
-  this.back = this.game.make.sprite(0, 0, this.key, this.key + "_" + element);
-  this.front = this.game.make.sprite(0, 0, this.key, this.key + "_" + element + "_fg");
+  this.backSprite = PrinceJS.Utils.image(this.scene, 0, 0, this.key, this.key + "_" + element);
+  this.back = new Phaser.GameObjects.Container(this.scene, 0, 0, [this.backSprite]);
+  this.frontSprite = PrinceJS.Utils.image(this.scene, 0, 0, this.key, this.key + "_" + element + "_fg");
+  this.front = new Phaser.GameObjects.Container(this.scene, 0, 0, [this.frontSprite]);
 
   this.room;
   this.roomX;
@@ -26,13 +31,13 @@ PrinceJS.Tile.Base = function (game, element, modifier, type) {
 PrinceJS.Tile.Base.prototype = {
   toggleMask: function () {
     if (this.frame != null) {
-      this.front.frameName = this.frame;
-      this.front.crop(null);
+      PrinceJS.Utils.crop(this.frontSprite, null);
+      this.frontSprite.setFrame(this.frame);
       this.frame = null;
     } else {
-      this.frame = this.front.frameName;
-      this.front.frameName = this.back.frameName;
-      this.front.crop(new Phaser.Rectangle(0, 0, 33, this.front.height));
+      this.frame = this.frontSprite.frame.name;
+      this.frontSprite.setFrame(this.backSprite.frame.name);
+      PrinceJS.Utils.crop(this.frontSprite, { x: 0, y: 0, width: 33, height: this.frontSprite.height });
     }
   },
 
@@ -105,7 +110,7 @@ PrinceJS.Tile.Base.prototype = {
   },
 
   getBounds: function () {
-    let bounds = new Phaser.Rectangle(0, 0, 0, 0);
+    let bounds = new Phaser.Geom.Rectangle(0, 0, 0, 0);
 
     bounds.height = 63;
     bounds.width = 4;
@@ -116,19 +121,19 @@ PrinceJS.Tile.Base.prototype = {
   },
 
   getBoundsAbs: function () {
-    return new Phaser.Rectangle(this.x, this.y, this.width, 63);
+    return new Phaser.Geom.Rectangle(this.x, this.y, this.width, 63);
   },
 
   intersects: function (bounds) {
-    return this.getBounds().intersects(bounds);
+    return PrinceJS.Utils.intersects(this.getBounds(), bounds);
   },
 
   intersectsAbs: function (boundsAbs) {
-    return this.getBoundsAbs().intersects(boundsAbs);
+    return PrinceJS.Utils.intersects(this.getBoundsAbs(), boundsAbs);
   },
 
   addDebris: function () {
-    this.game.sound.play("LooseFloorLands");
+    this.scene.sound.play("LooseFloorLands");
 
     if (this.debris) {
       return;
@@ -148,15 +153,21 @@ PrinceJS.Tile.Base.prototype = {
       this.debrisElement = PrinceJS.Level.TILE_DEBRIS_ONLY;
     }
 
-    this.debrisBack = this.game.make.sprite(0, 0, this.key, this.key + "_" + this.debrisElement);
-    this.back.addChild(this.debrisBack);
-    this.debrisFront = this.game.make.sprite(0, 0, this.key, this.key + "_" + PrinceJS.Level.TILE_DEBRIS + "_fg");
-    this.front.addChild(this.debrisFront);
+    this.debrisBack = PrinceJS.Utils.image(this.scene, 0, 0, this.key, this.key + "_" + this.debrisElement);
+    this.back.add(this.debrisBack);
+    this.debrisFront = PrinceJS.Utils.image(
+      this.scene,
+      0,
+      0,
+      this.key,
+      this.key + "_" + PrinceJS.Level.TILE_DEBRIS + "_fg"
+    );
+    this.front.add(this.debrisFront);
   },
 
   revalidate: function () {
-    this.back.frameName = this.key + "_" + this.element;
-    this.front.frameName = this.key + "_" + this.element + "_fg";
+    this.backSprite.setFrame(this.key + "_" + this.element);
+    this.frontSprite.setFrame(this.key + "_" + this.element + "_fg");
   }
 };
 
@@ -186,24 +197,24 @@ Object.defineProperty(PrinceJS.Tile.Base.prototype, "y", {
 
 Object.defineProperty(PrinceJS.Tile.Base.prototype, "centerX", {
   get: function () {
-    return this.back.centerX;
+    return this.back.x + this.backSprite.width * 0.5;
   }
 });
 
 Object.defineProperty(PrinceJS.Tile.Base.prototype, "centerY", {
   get: function () {
-    return this.back.centerY;
+    return this.back.y + this.backSprite.height * 0.5;
   }
 });
 
 Object.defineProperty(PrinceJS.Tile.Base.prototype, "width", {
   get: function () {
-    return this.back.width;
+    return this.backSprite.width;
   }
 });
 
 Object.defineProperty(PrinceJS.Tile.Base.prototype, "height", {
   get: function () {
-    return this.back.height;
+    return this.backSprite.height;
   }
 });

@@ -7,7 +7,7 @@
 // Regenerate with: npm run test:reference
 
 const { test, expect } = require("@playwright/test");
-const { boot, seedRandom, startLevel, waitForHudIdle, freezeWorld, stepWorld } = require("./helpers");
+const { boot, seedRandom, resetRandom, startLevel, waitForHudIdle, freezeWorld, stepWorld } = require("./helpers");
 
 const TICKS = 20;
 
@@ -17,8 +17,9 @@ for (let level = 1; level <= 14; level++) {
     const problems = await boot(page);
 
     await freezeWorld(page);
+    await resetRandom(page);
     await startLevel(page, level);
-    // Let pending setTimeout based actions (e.g. the kid turning around, HUD messages) happen first
+    // Let pending timed actions (e.g. the kid turning around, HUD messages) happen first
     await waitForHudIdle(page);
     await stepWorld(page, TICKS);
     await page.waitForTimeout(100);

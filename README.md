@@ -1,6 +1,6 @@
 # Prince of Persia (JS)
 
-Prince of Persia reimplementation written in HTML5/Javascript
+Prince of Persia reimplementation written in HTML5/Javascript, built on [Phaser 4](https://phaser.io)
 
 ## Play Online
 
@@ -30,4 +30,6 @@ level transitions, cutscenes and credits, and fail on any uncaught error or miss
 - `npm test`
 
 `tests/reference.spec.js` compares every level against reference screenshots taken at a
-deterministic point. They are platform specific; regenerate them with `npm run test:reference`.
+deterministic point. The committed screenshots were taken with the original Phaser 2 version of
+the game, so they check that the port to Phaser 4 looks the same. They are platform specific;
+regenerate them with `npm run test:reference`.

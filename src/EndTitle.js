@@ -1,68 +1,69 @@
+import Phaser from "phaser";
 import PrinceJS from "./PrinceJS.js";
 
-PrinceJS.EndTitle = function (game) {
-  this.tick = 0;
+PrinceJS.EndTitle = class extends Phaser.Scene {
+  constructor() {
+    super("EndTitle");
+    this.tick = 0;
+  }
 };
 
-PrinceJS.EndTitle.prototype = {
+Object.assign(PrinceJS.EndTitle.prototype, {
   preload: function () {},
 
   create: function () {
     this.stopMusic();
+    PrinceJS.Utils.setupCamera(this);
 
     this.tick = 0;
-    this.game.world.alpha = 1;
-
-    this.game.world.setBounds(0, 0, PrinceJS.SCREEN_WIDTH, PrinceJS.SCREEN_HEIGHT);
 
     this.game.sound.play("Epilogue");
 
-    this.back = this.game.add.image(0, 0, "title", "the_tyrant");
+    this.back = this.add.image(0, 0, "title", "the_tyrant").setOrigin(0, 0);
     this.back.alpha = 0;
 
-    this.tween1 = this.game.add.tween(this.back).to({ alpha: 1 }, 2000, Phaser.Easing.Linear.None, false, 0, 0, false);
+    this.tween1 = this.tweens.add({ targets: this.back, alpha: 1, duration: 2000, paused: true });
 
-    this.textBack = this.game.add.image(0, this.world.height, "title", "main_background");
-    this.textBack.anchor.setTo(0, 1);
+    this.textBack = this.add.image(0, PrinceJS.SCREEN_HEIGHT, "title", "main_background");
+    PrinceJS.Utils.anchor(this.textBack, 0, 1);
 
-    this.cropRect = new Phaser.Rectangle(0, 0, 0, this.textBack.height);
-    this.tween2 = this.game.add
-      .tween(this.cropRect)
-      .to({ width: this.textBack.width }, 200, Phaser.Easing.Linear.None, false, 0, 0, false);
-    this.textBack.crop(this.cropRect);
+    this.tween2 = PrinceJS.Utils.revealTween(this, this.textBack, 200);
 
-    this.tween3 = this.game.add
-      .tween(this.textBack)
-      .to({ alpha: 0 }, 2000, Phaser.Easing.Linear.None, false, 0, 0, false);
-    this.tween3.onComplete.add(this.next, this);
+    this.tween3 = this.tweens.add({
+      targets: this.textBack,
+      alpha: 0,
+      duration: 2000,
+      paused: true,
+      onComplete: this.next,
+      callbackScope: this
+    });
 
-    this.input.keyboard.onDownCallback = this.next.bind(this);
+    PrinceJS.Utils.onAnyKey(this, this.next.bind(this));
   },
 
   update: function () {
     switch (this.tick) {
       case 100:
-        this.tween1.start();
+        this.tween1.play();
         break;
       case 1250:
-        this.tween2.start();
+        this.tween2.play();
         break;
       case 7250:
         this.back.visible = false;
-        this.tween3.start();
+        this.tween3.play();
         break;
     }
 
     this.tick++;
-    this.textBack.updateCrop();
   },
 
   next: function () {
-    this.input.keyboard.onDownCallback = null;
-    this.state.start("Title");
+    PrinceJS.Utils.onAnyKey(this, null);
+    this.scene.start("Title");
   },
 
   stopMusic: function () {
     this.game.sound.stopAll();
   }
-};
+});

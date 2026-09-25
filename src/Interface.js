@@ -1,23 +1,24 @@
 import PrinceJS from "./PrinceJS.js";
 
-PrinceJS.Interface = function (game, delegate) {
-  this.game = game;
+// The status bar at the bottom of the screen, fixed to the camera
+PrinceJS.Interface = function (scene, delegate) {
+  this.scene = scene;
   this.delegate = delegate;
 
   this.text;
 
-  let bmd = this.game.make.bitmapData(PrinceJS.SCREEN_WIDTH, PrinceJS.UI_HEIGHT);
-  bmd.fill(0, 0, 0);
+  this.layer = this.scene.add.layer();
+  this.layer.setDepth(40);
+  this.top = PrinceJS.SCREEN_HEIGHT - PrinceJS.UI_HEIGHT;
 
-  this.layer = this.game.add.sprite(0, (PrinceJS.SCREEN_HEIGHT - PrinceJS.UI_HEIGHT) * PrinceJS.SCALE_FACTOR, bmd);
-  this.layer.fixedToCamera = true;
+  this.addToLayer(this.scene.add.rectangle(0, 0, PrinceJS.SCREEN_WIDTH, PrinceJS.UI_HEIGHT, 0x000000).setOrigin(0, 0));
 
-  this.text = this.game.make.bitmapText(PrinceJS.SCREEN_WIDTH * 0.5, (PrinceJS.UI_HEIGHT - 1) * 0.5, "font", "", 16);
-  this.text.anchor.setTo(0.5, 0.5);
+  this.text = this.scene.add.bitmapText(PrinceJS.SCREEN_WIDTH * 0.5, (PrinceJS.UI_HEIGHT - 1) * 0.5, "font", "", 16);
+  this.text.setOrigin(0.5, 0.5);
   this.showTextType = null;
   this.showLevel();
 
-  this.layer.addChild(this.text);
+  this.addToLayer(this.text);
 
   this.player = null;
   this.playerHPs = [];
@@ -31,12 +32,19 @@ PrinceJS.Interface = function (game, delegate) {
 };
 
 PrinceJS.Interface.prototype = {
+  // Positions are relative to the top left corner of the status bar
+  addToLayer: function (object) {
+    object.y += this.top;
+    object.setScrollFactor(0);
+    this.layer.add(object);
+    return object;
+  },
+
   setPlayerLive: function (actor) {
     this.player = actor;
     this.playerHPActive = this.player.health;
     for (let i = 0; i < this.playerHPActive; i++) {
-      this.playerHPs[i] = this.game.add.sprite(i * 7, 2, "general", "kid-live");
-      this.layer.addChild(this.playerHPs[i]);
+      this.playerHPs[i] = this.addToLayer(PrinceJS.Utils.image(this.scene, i * 7, 2, "general", "kid-live"));
     }
     this.player.onDamageLife.add(this.damagePlayerLive, this);
     this.player.onRecoverLive.add(this.recoverPlayerLive, this);
@@ -47,27 +55,26 @@ PrinceJS.Interface.prototype = {
     let n = Math.min(this.playerHPActive, num);
     for (let i = 0; i < n; i++) {
       this.playerHPActive--;
-      this.playerHPs[this.playerHPActive].frameName = "kid-emptylive";
+      this.playerHPs[this.playerHPActive].setFrame("kid-emptylive");
     }
   },
 
   recoverPlayerLive: function () {
-    this.playerHPs[0].frameName = "kid-live";
-    this.playerHPs[this.playerHPActive].frameName = "kid-live";
+    this.playerHPs[0].setFrame("kid-live");
+    this.playerHPs[this.playerHPActive].setFrame("kid-live");
     this.playerHPActive++;
   },
 
   addPlayerLive: function () {
     this.playerHPActive = this.playerHPs.length;
     if (this.playerHPs.length < 10) {
-      let hp = this.game.add.sprite(this.playerHPActive * 7, 2, "general", "kid-live");
+      let hp = this.addToLayer(PrinceJS.Utils.image(this.scene, this.playerHPActive * 7, 2, "general", "kid-live"));
       this.playerHPs[this.playerHPActive] = hp;
-      this.layer.addChild(hp);
       this.playerHPActive++;
     }
 
     for (let i = 0; i < this.playerHPActive; i++) {
-      this.playerHPs[i].frameName = "kid-live";
+      this.playerHPs[i].setFrame("kid-live");
     }
   },
 
@@ -86,16 +93,12 @@ PrinceJS.Interface.prototype = {
     this.oppHPActive = actor.health;
 
     for (let i = actor.health; i > 0; i--) {
-      this.oppHPs[i - 1] = this.game.add.sprite(
-        PrinceJS.SCREEN_WIDTH - i * 7 + 1,
-        2,
-        "general",
-        actor.baseCharName + "-live"
+      this.oppHPs[i - 1] = this.addToLayer(
+        PrinceJS.Utils.image(this.scene, PrinceJS.SCREEN_WIDTH - i * 7 + 1, 2, "general", actor.baseCharName + "-live")
       );
       if (actor.charColor > 0) {
         this.oppHPs[i - 1].tint = PrinceJS.Enemy.COLOR[actor.charColor - 1];
       }
-      this.layer.addChild(this.oppHPs[i - 1]);
     }
 
     actor.onDamageLife.add(this.damageOpponentLive, this);
@@ -130,10 +133,10 @@ PrinceJS.Interface.prototype = {
     this.showRegularRemainingTime();
 
     if (this.playerHPActive === 1) {
-      if (this.playerHPs[0].frameName === "kid-live") {
-        this.playerHPs[0].frameName = "kid-emptylive";
+      if (this.playerHPs[0].frame.name === "kid-live") {
+        this.playerHPs[0].setFrame("kid-emptylive");
       } else {
-        this.playerHPs[0].frameName = "kid-live";
+        this.playerHPs[0].setFrame("kid-live");
       }
     }
 
@@ -147,7 +150,7 @@ PrinceJS.Interface.prototype = {
         if (this.pressButtonToContinueStep % 7 === 0) {
           this.text.visible = !this.text.visible;
           if (this.text.visible) {
-            this.game.sound.play("Beep");
+            this.scene.sound.play("Beep");
           }
         }
       }
@@ -188,10 +191,14 @@ PrinceJS.Interface.prototype = {
       return;
     }
     this.showText("LEVEL " + PrinceJS.currentLevel, "level");
-    PrinceJS.Utils.delayed(() => {
-      this.hideText();
-      this.showRegularRemainingTime(true);
-    }, 2000);
+    PrinceJS.Utils.delayed(
+      this.scene,
+      () => {
+        this.hideText();
+        this.showRegularRemainingTime(true);
+      },
+      2000
+    );
   },
 
   showRegularRemainingTime: function (force) {
@@ -217,9 +224,13 @@ PrinceJS.Interface.prototype = {
     }
     let minutes = this.getRemainingMinutes();
     this.showText(minutes + (minutes === 1 ? " MINUTE " : " MINUTES ") + "LEFT", "minutes");
-    PrinceJS.Utils.delayed(() => {
-      this.hideText();
-    }, 3000);
+    PrinceJS.Utils.delayed(
+      this.scene,
+      () => {
+        this.hideText();
+      },
+      3000
+    );
   },
 
   showRemainingSeconds: function () {
@@ -231,10 +242,14 @@ PrinceJS.Interface.prototype = {
   },
 
   showPressButtonToContinue: function () {
-    PrinceJS.Utils.delayed(() => {
-      this.showText("Press Button to Continue", "continue");
-      this.pressButtonToContinueStep = 200;
-    }, 4000);
+    PrinceJS.Utils.delayed(
+      this.scene,
+      () => {
+        this.showText("Press Button to Continue", "continue");
+        this.pressButtonToContinueStep = 200;
+      },
+      4000
+    );
   },
 
   showText: function (text, type) {

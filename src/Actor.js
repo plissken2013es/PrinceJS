@@ -1,64 +1,67 @@
+import Phaser from "phaser";
 import PrinceJS from "./PrinceJS.js";
 
-PrinceJS.Actor = function (game, charX, charY, charFace, key, animKey) {
-  Phaser.Sprite.call(this, game, 0, 0, key);
+PrinceJS.Actor = class extends Phaser.GameObjects.Sprite {
+  constructor(scene, charX, charY, charFace, key, animKey) {
+    super(scene, 0, 0, key);
 
-  if (typeof animKey === "undefined") {
-    animKey = key;
+    if (typeof animKey === "undefined") {
+      animKey = key;
+    }
+
+    this.charX = charX;
+    this.charY = charY;
+    this.charFace = charFace;
+    this.charName = key;
+
+    this.charFrame;
+    this.charFdx = 0;
+    this.charFdy = 0;
+    this.charFcheck = false;
+    this.charFfoot = 0;
+    this.charFood = false;
+    this.charFthin = false;
+
+    this.scaleX *= -charFace;
+    PrinceJS.Utils.anchor(this, 0, 1);
+
+    this._action = "stand";
+    this._seqpointer = 0;
+
+    this.scene.add.existing(this);
+
+    this.setDepth(20);
+
+    // Sprites that follow this actor, like children did in Phaser 2
+    this.attachments = [];
+
+    this.baseX = 0;
+    this.baseY = 0;
+
+    this.charAnims = this.scene.cache.json.get(animKey + "-anims");
+
+    this.commands = [];
+    this.delegate = null;
+
+    for (let i = 0; i < 256; i++) {
+      this.registerCommand(i, this.CMD_NOOP);
+    }
+
+    this.registerCommand(0xff, this.CMD_GOTO); // 255
+    this.registerCommand(0xfe, this.CMD_ABOUTFACE); // 254
+    this.registerCommand(0xfb, this.CMD_CHX); // 251
+    this.registerCommand(0xfa, this.CMD_CHY); // 250
+    this.registerCommand(0xf2, this.CMD_TAP); // 242
+    this.registerCommand(0x00, this.CMD_FRAME); // 0
   }
-
-  this.charX = charX;
-  this.charY = charY;
-  this.charFace = charFace;
-  this.charName = key;
-
-  this.charFrame;
-  this.charFdx = 0;
-  this.charFdy = 0;
-  this.charFcheck = false;
-  this.charFfoot = 0;
-  this.charFood = false;
-  this.charFthin = false;
-
-  this.scale.x *= -charFace;
-  this.anchor.setTo(0, 1);
-
-  this._action = "stand";
-  this._seqpointer = 0;
-
-  this.game.add.existing(this);
-
-  this.z = 20;
-
-  this.baseX = 0;
-  this.baseY = 0;
-
-  this.anims = this.game.cache.getJSON(animKey + "-anims");
-
-  this.commands = [];
-  this.delegate = null;
-
-  for (let i = 0; i < 256; i++) {
-    this.registerCommand(i, this.CMD_NOOP);
-  }
-
-  this.registerCommand(0xff, this.CMD_GOTO); // 255
-  this.registerCommand(0xfe, this.CMD_ABOUTFACE); // 254
-  this.registerCommand(0xfb, this.CMD_CHX); // 251
-  this.registerCommand(0xfa, this.CMD_CHY); // 250
-  this.registerCommand(0xf2, this.CMD_TAP); // 242
-  this.registerCommand(0x00, this.CMD_FRAME); // 0
 };
-
-PrinceJS.Actor.prototype = Object.create(Phaser.Sprite.prototype);
-PrinceJS.Actor.prototype.constructor = PrinceJS.Actor;
 
 PrinceJS.Actor.prototype.registerCommand = function (value, fn) {
   this.commands[value] = fn.bind(this);
 };
 
 PrinceJS.Actor.prototype.updateCharFrame = function () {
-  let framedef = this.anims.framedef[this.charFrame];
+  let framedef = this.charAnims.framedef[this.charFrame];
   this.charFdx = framedef.fdx;
   this.charFdy = framedef.fdy;
 
@@ -105,7 +108,7 @@ PrinceJS.Actor.prototype.processCommand = function () {
   this.processing = true;
 
   while (this.processing) {
-    let data = this.anims.sequence[this._action][this._seqpointer];
+    let data = this.charAnims.sequence[this._action][this._seqpointer];
     this.commands[data.cmd](data);
 
     this._seqpointer++;
@@ -114,7 +117,8 @@ PrinceJS.Actor.prototype.processCommand = function () {
 
 PrinceJS.Actor.prototype.changeFace = function () {
   this.charFace *= -1;
-  this.scale.x *= -1;
+  this.scaleX *= -1;
+  this.syncAttachments();
 
   if (this.delegate) {
     this.delegate.syncFace(this);
@@ -122,7 +126,7 @@ PrinceJS.Actor.prototype.changeFace = function () {
 };
 
 PrinceJS.Actor.prototype.updateCharPosition = function () {
-  this.frameName = this.charName + "-" + this.charFrame;
+  PrinceJS.Utils.setFrame(this, this.charName + "-" + this.charFrame);
 
   let tempx = this.charX + this.charFdx * this.charFace;
 
@@ -132,6 +136,7 @@ PrinceJS.Actor.prototype.updateCharPosition = function () {
 
   this.x = this.baseX + PrinceJS.Utils.convertX(tempx);
   this.y = this.baseY + this.charY + this.charFdy;
+  this.syncAttachments();
 
   if (this.delegate) {
     this.delegate.syncFrame(this);
@@ -153,6 +158,41 @@ PrinceJS.Actor.prototype.frameID = function (from, to) {
     return this.charFrame >= from && this.charFrame <= to;
   }
 };
+
+// Attaches a sprite at an offset from the actor's position. It follows the actor's
+// position and facing, and is only drawn while the actor is visible.
+PrinceJS.Actor.prototype.attach = function (sprite, offsetX, offsetY) {
+  let owner = this;
+
+  sprite.offsetX = offsetX;
+  sprite.offsetY = offsetY;
+  sprite.setDepth(this.depth);
+  sprite.willRender = function (camera) {
+    return owner.visible && Phaser.GameObjects.Sprite.prototype.willRender.call(this, camera);
+  };
+  this.scene.add.existing(sprite);
+  this.attachments.push(sprite);
+  this.syncAttachments();
+
+  return sprite;
+};
+
+PrinceJS.Actor.prototype.syncAttachments = function () {
+  for (let sprite of this.attachments) {
+    sprite.x = this.x + sprite.offsetX * this.scaleX;
+    sprite.y = this.y + sprite.offsetY * this.scaleY;
+    sprite.scaleX = this.scaleX;
+    sprite.scaleY = this.scaleY;
+  }
+};
+
+// Phaser 2's centerX: based on the anchor and the signed, cropped width
+Object.defineProperty(PrinceJS.Actor.prototype, "centerX", {
+  get: function () {
+    let width = PrinceJS.Utils.width(this);
+    return this.x - this.anchorX * width + width * 0.5;
+  }
+});
 
 Object.defineProperty(PrinceJS.Actor.prototype, "action", {
   get: function () {

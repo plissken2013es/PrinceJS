@@ -1,13 +1,14 @@
 import PrinceJS from "./PrinceJS.js";
 
-PrinceJS.Scene = function (game) {
-  this.game = game;
+// The princess' room shown in the cutscenes
+PrinceJS.Scene = function (scene) {
+  this.scene = scene;
 
-  this.back = this.game.add.group();
-  this.back.z = 10;
+  this.back = this.scene.add.layer();
+  this.back.setDepth(10);
 
-  this.front = this.game.add.group();
-  this.front.z = 30;
+  this.front = this.scene.add.layer();
+  this.front.setDepth(30);
 
   this.trobs = [];
 
@@ -19,19 +20,21 @@ PrinceJS.Scene = function (game) {
 
 PrinceJS.Scene.prototype = {
   _build: function () {
-    this.game.add.image(0, 0, "cutscene", "room", this.back);
-    this.game.add.image(0, 142, "cutscene", "room_bed", this.back);
+    this.back.add(PrinceJS.Utils.image(this.scene, 0, 0, "cutscene", "room"));
+    this.back.add(PrinceJS.Utils.image(this.scene, 0, 142, "cutscene", "room_bed"));
 
     let torchPos = [
       { x: 53, y: 81 },
       { x: 171, y: 81 }
     ];
+
     let i;
+
     for (i = 0; i < torchPos.length; i++) {
-      let torch = new PrinceJS.Tile.Torch(this.game, PrinceJS.Level.TILE_TORCH, 0, PrinceJS.Level.TYPE_PALACE);
+      let torch = new PrinceJS.Tile.Torch(this.scene, PrinceJS.Level.TILE_TORCH, 0, PrinceJS.Level.TYPE_PALACE);
       torch.x = torchPos[i].x;
       torch.y = torchPos[i].y;
-      torch.back.frameName = "palace_0";
+      torch.backSprite.setFrame("palace_0");
       this.addObject(torch);
     }
 
@@ -43,13 +46,14 @@ PrinceJS.Scene.prototype = {
       { x: 24, y: 120 },
       { x: 18, y: 128 }
     ];
+
     for (i = 0; i < starPos.length; i++) {
-      let star = new PrinceJS.Tile.Star(this.game, starPos[i].x, starPos[i].y);
+      let star = new PrinceJS.Tile.Star(this.scene, starPos[i].x, starPos[i].y);
       this.addObject(star);
     }
 
-    this.game.add.image(59, 120, "cutscene", "room_pillar", this.front);
-    this.game.add.image(240, 120, "cutscene", "room_pillar", this.front);
+    this.front.add(PrinceJS.Utils.image(this.scene, 59, 120, "cutscene", "room_pillar"));
+    this.front.add(PrinceJS.Utils.image(this.scene, 240, 120, "cutscene", "room_pillar"));
   },
 
   addTrob: function (trob) {
@@ -68,11 +72,10 @@ PrinceJS.Scene.prototype = {
         this.flash = false;
         return;
       }
-
       if (this.tick % 2) {
-        this.game.stage.backgroundColor = "#FFFFFF";
+        this.scene.cameras.main.setBackgroundColor("#FFFFFF");
       } else {
-        this.game.stage.backgroundColor = "#000000";
+        this.scene.cameras.main.setBackgroundColor("#000000");
       }
       this.tick++;
     }

@@ -1,7 +1,11 @@
+import Phaser from "phaser";
 import PrinceJS from "./PrinceJS.js";
 
-PrinceJS.Cutscene = function (game) {
-  this.scene;
+PrinceJS.Cutscene = class extends Phaser.Scene {
+  constructor() {
+    super("Cutscene");
+    this.room;
+  }
 };
 
 PrinceJS.Cutscene.STATE_SETUP = 0;
@@ -9,25 +13,29 @@ PrinceJS.Cutscene.STATE_READY = 1;
 PrinceJS.Cutscene.STATE_WAITING = 2;
 PrinceJS.Cutscene.STATE_RUNNING = 3;
 
-PrinceJS.Cutscene.prototype = {
+Object.assign(PrinceJS.Cutscene.prototype, {
   preload: function () {
+    // Each cutscene is loaded under the same key
+    this.cache.json.remove("cutscene");
     this.load.json("cutscene", "assets/cutscenes/scene" + PrinceJS.currentLevel + ".json");
   },
 
   create: function () {
     this.reset();
 
-    this.program = this.game.cache.getJSON("cutscene").program;
+    PrinceJS.Utils.setupCamera(this);
 
-    this.scene = new PrinceJS.Scene(this.game);
+    this.program = this.cache.json.get("cutscene").program;
+
+    this.room = new PrinceJS.Scene(this);
     this.executeProgram();
 
     if (PrinceJS.currentLevel < 15) {
-      this.input.keyboard.onDownCallback = this.play.bind(this);
+      PrinceJS.Utils.onAnyKey(this, this.play.bind(this));
     } else {
-      this.input.keyboard.onDownCallback = this.next.bind(this);
+      PrinceJS.Utils.onAnyKey(this, this.next.bind(this));
     }
-    this.game.time.events.loop(120, this.updateScene, this);
+    this.time.addEvent({ delay: 120, loop: true, callback: this.updateScene, callbackScope: this });
   },
 
   executeProgram: function () {
@@ -44,7 +52,6 @@ PrinceJS.Cutscene.prototype = {
       let actor;
       switch (opcode.i) {
         case "START":
-          this.world.sort("z");
           this.sceneState = PrinceJS.Cutscene.STATE_READY;
           if (opcode.p1 === 0) {
             this.fadeOut(1);
@@ -65,17 +72,17 @@ PrinceJS.Cutscene.prototype = {
           break;
 
         case "ADD_ACTOR":
-          actor = new PrinceJS.Actor(this.game, opcode.p3, opcode.p4, opcode.p5, opcode.p2);
+          actor = new PrinceJS.Actor(this, opcode.p3, opcode.p4, opcode.p5, opcode.p2);
           this.actors[opcode.p1] = actor;
           break;
 
         case "REM_ACTOR":
-          this.actors[opcode.p1].kill();
+          this.actors[opcode.p1].setVisible(false);
           break;
 
         case "ADD_OBJECT":
-          this.objects[opcode.p1] = new PrinceJS.Tile.Clock(this.game, opcode.p3, opcode.p4, opcode.p2);
-          this.scene.addObject(this.objects[opcode.p1]);
+          this.objects[opcode.p1] = new PrinceJS.Tile.Clock(this, opcode.p3, opcode.p4, opcode.p2);
+          this.room.addObject(this.objects[opcode.p1]);
           break;
 
         case "START_OBJECT":
@@ -83,7 +90,7 @@ PrinceJS.Cutscene.prototype = {
           break;
 
         case "EFFECT":
-          this.scene.effect();
+          this.room.effect();
           break;
 
         case "WAIT":
@@ -119,7 +126,7 @@ PrinceJS.Cutscene.prototype = {
       this.sceneState = PrinceJS.Cutscene.STATE_RUNNING;
     }
     this.executeProgram();
-    this.scene.update();
+    this.room.update();
 
     for (let i = 0; i < this.actors.length; i++) {
       this.actors[i].updateActor();
@@ -129,8 +136,8 @@ PrinceJS.Cutscene.prototype = {
   play: function () {
     this.stopMusic();
 
-    this.input.keyboard.onDownCallback = null;
-    this.state.start("Game");
+    PrinceJS.Utils.onAnyKey(this, null);
+    this.scene.start("Game");
   },
 
   endCutscene: function (fadeOut = true) {
@@ -144,16 +151,16 @@ PrinceJS.Cutscene.prototype = {
   },
 
   next: function () {
-    this.input.keyboard.onDownCallback = null;
+    PrinceJS.Utils.onAnyKey(this, null);
 
     if (PrinceJS.currentLevel === 1) {
-      this.state.start("Credits");
+      this.scene.start("Credits");
     } else if (PrinceJS.currentLevel === 15) {
       PrinceJS.Init();
-      this.state.start("EndTitle");
+      this.scene.start("EndTitle");
     } else if (PrinceJS.currentLevel === 16) {
       PrinceJS.Init();
-      this.state.start("Title");
+      this.scene.start("Title");
     } else {
       this.play();
     }
@@ -173,20 +180,28 @@ PrinceJS.Cutscene.prototype = {
   },
 
   fadeIn: function (duration = 2000, callback) {
-    this.camera.fadeIn(0x000000, duration, false, 1);
-    PrinceJS.Utils.delayed(() => {
-      if (callback) {
-        callback();
-      }
-    }, duration);
+    this.cameras.main.fadeFrom(duration, 0, 0, 0, false);
+    PrinceJS.Utils.delayed(
+      this,
+      () => {
+        if (callback) {
+          callback();
+        }
+      },
+      duration
+    );
   },
 
   fadeOut: function (duration = 2000, callback) {
-    this.camera.fade(0x000000, duration, false, 1);
-    PrinceJS.Utils.delayed(() => {
-      if (callback) {
-        callback();
-      }
-    }, duration);
+    this.cameras.main.fade(duration, 0, 0, 0, false);
+    PrinceJS.Utils.delayed(
+      this,
+      () => {
+        if (callback) {
+          callback();
+        }
+      },
+      duration
+    );
   }
-};
+});

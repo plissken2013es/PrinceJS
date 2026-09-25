@@ -1,7 +1,7 @@
 import PrinceJS from "../PrinceJS.js";
 
-PrinceJS.Tile.Spikes = function (game, modifier, type) {
-  PrinceJS.Tile.Base.call(this, game, PrinceJS.Level.TILE_SPIKES, modifier, type);
+PrinceJS.Tile.Spikes = function (scene, modifier, type) {
+  PrinceJS.Tile.Base.call(this, scene, PrinceJS.Level.TILE_SPIKES, modifier, type);
 
   this.state = PrinceJS.Tile.Spikes.STATE_INACTIVE;
   this.step = 0;
@@ -17,11 +17,17 @@ PrinceJS.Tile.Spikes = function (game, modifier, type) {
     modifier = 9 - modifier;
   }
 
-  this.tileChildBack = this.game.make.sprite(0, 0, this.key, this.key + "_" + this.element + "_" + modifier);
-  this.back.addChild(this.tileChildBack);
+  this.tileChildBack = PrinceJS.Utils.image(this.scene, 0, 0, this.key, this.key + "_" + this.element + "_" + modifier);
+  this.back.add(this.tileChildBack);
 
-  this.tileChildFront = this.game.make.sprite(0, 0, this.key, this.key + "_" + this.element + "_" + modifier + "_fg");
-  this.front.addChild(this.tileChildFront);
+  this.tileChildFront = PrinceJS.Utils.image(
+    this.scene,
+    0,
+    0,
+    this.key,
+    this.key + "_" + this.element + "_" + modifier + "_fg"
+  );
+  this.front.add(this.tileChildFront);
 };
 
 PrinceJS.Tile.Spikes.STATE_INACTIVE = 0;
@@ -36,8 +42,8 @@ PrinceJS.Tile.Spikes.prototype.update = function () {
   switch (this.state) {
     case PrinceJS.Tile.Spikes.STATE_RAISING:
       this.step++;
-      this.tileChildBack.frameName = this.key + "_" + PrinceJS.Level.TILE_SPIKES + "_" + this.step;
-      this.tileChildFront.frameName = this.key + "_" + PrinceJS.Level.TILE_SPIKES + "_" + this.step + "_fg";
+      this.tileChildBack.setFrame(this.key + "_" + PrinceJS.Level.TILE_SPIKES + "_" + this.step);
+      this.tileChildFront.setFrame(this.key + "_" + PrinceJS.Level.TILE_SPIKES + "_" + this.step + "_fg");
       if (this.step === 5) {
         this.state = PrinceJS.Tile.Spikes.STATE_FULL_OUT;
         this.step = 0;
@@ -57,8 +63,8 @@ PrinceJS.Tile.Spikes.prototype.update = function () {
       if (this.step === 3) {
         this.step--;
       }
-      this.tileChildBack.frameName = this.key + "_" + PrinceJS.Level.TILE_SPIKES + "_" + this.step;
-      this.tileChildFront.frameName = this.key + "_" + PrinceJS.Level.TILE_SPIKES + "_" + this.step + "_fg";
+      this.tileChildBack.setFrame(this.key + "_" + PrinceJS.Level.TILE_SPIKES + "_" + this.step);
+      this.tileChildFront.setFrame(this.key + "_" + PrinceJS.Level.TILE_SPIKES + "_" + this.step + "_fg");
       if (this.step === 0) {
         this.state = PrinceJS.Tile.Spikes.STATE_INACTIVE;
       }
@@ -69,7 +75,7 @@ PrinceJS.Tile.Spikes.prototype.update = function () {
 PrinceJS.Tile.Spikes.prototype.raise = function () {
   if (this.state === PrinceJS.Tile.Spikes.STATE_INACTIVE) {
     this.state = PrinceJS.Tile.Spikes.STATE_RAISING;
-    this.game.sound.play("ImpaledBySpikes");
+    this.scene.sound.play("ImpaledBySpikes");
   } else {
     if (this.state === PrinceJS.Tile.Spikes.STATE_FULL_OUT) {
       this.step = 0;

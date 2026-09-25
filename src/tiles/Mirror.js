@@ -1,25 +1,32 @@
+import Phaser from "phaser";
 import PrinceJS from "../PrinceJS.js";
 
-PrinceJS.Tile.Mirror = function (game, modifier, type) {
-  PrinceJS.Tile.Base.call(this, game, PrinceJS.Level.TILE_FLOOR, modifier, type);
+PrinceJS.Tile.Mirror = function (scene, modifier, type) {
+  PrinceJS.Tile.Base.call(this, scene, PrinceJS.Level.TILE_FLOOR, modifier, type);
 
-  this.mirrorBack = this.game.make.sprite(3, -3, this.key, this.key + "_" + this.element + "_mirror");
+  this.mirrorBack = PrinceJS.Utils.image(this.scene, 3, -3, this.key, this.key + "_" + this.element + "_mirror");
   this.mirrorBack.visible = false;
-  this.back.addChild(this.mirrorBack);
-  this.mirrorFront = this.game.make.sprite(3, -3, this.key, this.key + "_" + this.element + "_fg_mirror");
+  this.back.add(this.mirrorBack);
+  this.mirrorFront = PrinceJS.Utils.image(this.scene, 3, -3, this.key, this.key + "_" + this.element + "_fg_mirror");
   this.mirrorFront.visible = false;
-  this.front.addChild(this.mirrorFront);
+  this.front.add(this.mirrorFront);
 
-  this.reflectionGroup = this.game.add.group();
-  this.reflectionGroup.scale.x *= -1;
-  this.reflection = this.game.make.sprite(0, 0, "kid", "kid-1");
-  this.reflection.anchor.setTo(0, 1);
+  this.reflectionGroup = new Phaser.GameObjects.Container(this.scene, 0, 0);
+  this.reflectionGroup.scaleX *= -1;
+  this.reflection = PrinceJS.Utils.image(this.scene, 0, 0, "kid", "kid-1");
+  PrinceJS.Utils.anchor(this.reflection, 0, 1);
   this.reflection.visible = false;
-  this.reflectionGroup.addChild(this.reflection);
-  this.back.addChild(this.reflectionGroup);
+  this.reflectionGroup.add(this.reflection);
+  this.back.add(this.reflectionGroup);
 
-  this.reflectionCover = this.game.make.sprite(-105, -5, this.key, this.key + "_" + this.element + "_mirror_cover");
-  this.back.addChild(this.reflectionCover);
+  this.reflectionCover = PrinceJS.Utils.image(
+    this.scene,
+    -105,
+    -5,
+    this.key,
+    this.key + "_" + this.element + "_mirror_cover"
+  );
+  this.back.add(this.reflectionCover);
 };
 
 PrinceJS.Tile.Mirror.prototype = Object.create(PrinceJS.Tile.Base.prototype);
@@ -44,7 +51,7 @@ PrinceJS.Tile.Mirror.prototype.toggleMask = function () {
 
 PrinceJS.Tile.Mirror.prototype.syncFrame = function (actor) {
   if (this.reflection) {
-    this.reflection.frameName = actor.frameName;
+    this.reflection.setFrame(actor.frame.name);
     this.reflection.x = actor.x - this.x - 55;
     this.reflection.x = Math.max(this.reflection.x, actor.faceL() ? -25 : -7);
     this.reflection.y = actor.y - this.y;
@@ -55,7 +62,7 @@ PrinceJS.Tile.Mirror.prototype.syncFrame = function (actor) {
 PrinceJS.Tile.Mirror.prototype.syncFace = function (actor) {
   if (this.reflection) {
     this.reflection.charFace = actor.charFace;
-    this.reflection.scale.x = actor.scale.x;
+    this.reflection.scaleX = actor.scaleX;
   }
 };
 

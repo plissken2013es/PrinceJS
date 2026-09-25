@@ -7,8 +7,6 @@ env:
 parserOptions:
   ecmaVersion: 2020
   sourceType: module
-globals:
-  Phaser: false
 extends:
   - "eslint:recommended"
   - prettier
@@ -30,3 +28,4 @@ overrides:
       sourceType: script
     globals:
       PrinceJS: false
+      Phaser: false

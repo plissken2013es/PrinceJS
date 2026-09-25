@@ -1,21 +1,28 @@
+import Phaser from "phaser";
 import PrinceJS from "./PrinceJS.js";
 
-PrinceJS.Game = function (game) {
-  this.kid;
+PrinceJS.Game = class extends Phaser.Scene {
+  constructor() {
+    super("Game");
 
-  this.level;
+    this.kid;
 
-  this.ui;
-  this.currentRoom;
+    this.level;
 
-  this.enemies = [];
+    this.ui;
+    this.currentRoom;
 
-  this.continueTimer = -1;
-  this.pressButtonToContinueTimer = -1;
+    this.enemies = [];
+
+    this.continueTimer = -1;
+    this.pressButtonToContinueTimer = -1;
+  }
 };
 
-PrinceJS.Game.prototype = {
+Object.assign(PrinceJS.Game.prototype, {
   preload: function () {
+    // Every level is loaded under the same key
+    this.cache.json.remove("level");
     this.load.json("level", "assets/maps/level" + PrinceJS.currentLevel + ".json");
 
     if (!PrinceJS.startTime) {
@@ -32,20 +39,22 @@ PrinceJS.Game.prototype = {
     this.pressButtonToContinueTimer = -1;
     this.leavingState = false;
 
+    PrinceJS.Utils.setupCamera(this);
+
     if (PrinceJS.currentLevel === 1) {
       PrinceJS.firstLand = true;
     }
 
-    let json = this.game.cache.getJSON("level");
+    let json = this.cache.json.get("level");
 
-    this.level = new PrinceJS.LevelBuilder(this.game, this).buildFromJSON(json);
+    this.level = new PrinceJS.LevelBuilder(this, this).buildFromJSON(json);
 
     this.shadow = null;
     this.mouse = null;
     for (let i = 0; i < json.guards.length; i++) {
       let data = json.guards[i];
       let enemy = new PrinceJS.Enemy(
-        this.game,
+        this,
         this.level,
         data.location,
         data.direction,
@@ -56,10 +65,10 @@ PrinceJS.Game.prototype = {
         i
       );
       if (data.visible === false) {
-        enemy.setInvisible();
+        enemy.hide();
       }
       if (data.active === false) {
-        enemy.setInactive();
+        enemy.deactivate();
       }
       enemy.onInitLife.add((fighter) => {
         this.ui.setOpponentLive(fighter);
@@ -70,12 +79,16 @@ PrinceJS.Game.prototype = {
       }
     }
 
-    this.kid = new PrinceJS.Kid(this.game, this.level, json.prince.location, json.prince.direction, json.prince.room);
+    this.kid = new PrinceJS.Kid(this, this.level, json.prince.location, json.prince.direction, json.prince.room);
     if (json.prince.turn !== false) {
       this.kid.charX -= 6;
-      PrinceJS.Utils.delayed(() => {
-        this.kid.action = "turn";
-      }, 100);
+      PrinceJS.Utils.delayed(
+        this,
+        () => {
+          this.kid.action = "turn";
+        },
+        100
+      );
     }
     this.kid.charX += json.prince.offset || 0;
 
@@ -89,26 +102,27 @@ PrinceJS.Game.prototype = {
     PrinceJS.Tile.Gate.reset();
     this.updateRoom(this.currentRoom, json.prince.cameraRoom, true);
 
-    this.world.sort("z");
-    this.world.alpha = 1;
-
-    this.ui = new PrinceJS.Interface(this.game, this);
+    this.ui = new PrinceJS.Interface(this, this);
     this.ui.setPlayerLive(this.kid);
 
-    this.game.time.events.loop(80, this.updateWorld, this);
+    this.worldTimer = this.time.addEvent({ delay: 80, loop: true, callback: this.updateWorld, callbackScope: this });
 
-    this.input.keyboard.addKey(Phaser.Keyboard.R).onDown.add(this.restartGameEvent, this);
-    this.input.keyboard.addKey(Phaser.Keyboard.A).onDown.add(this.restartLevelEvent, this);
-    this.input.keyboard.addKey(Phaser.Keyboard.L).onDown.add(this.nextLevelEvent, this);
-    this.input.keyboard.addKey(Phaser.Keyboard.SPACEBAR).onDown.add(this.showRemainingMinutes, this);
+    this.input.keyboard.on("keydown-R", this.restartGameEvent, this);
+    this.input.keyboard.on("keydown-A", this.restartLevelEvent, this);
+    this.input.keyboard.on("keydown-L", this.nextLevelEvent, this);
+    this.input.keyboard.on("keydown-SPACE", this.showRemainingMinutes, this);
 
-    this.input.keyboard.onDownCallback = this.continueLevel.bind(this);
+    PrinceJS.Utils.onAnyKey(this, this.continueLevel.bind(this));
 
     if (PrinceJS.danger) {
       PrinceJS.danger = false;
-      PrinceJS.Utils.delayed(() => {
-        this.game.sound.play("Danger");
-      }, 800);
+      PrinceJS.Utils.delayed(
+        this,
+        () => {
+          this.game.sound.play("Danger");
+        },
+        800
+      );
     }
 
     this.firstUpdate = true;
@@ -157,20 +171,24 @@ PrinceJS.Game.prototype = {
             let tile = this.level.getTileAt(skeleton.charBlockX, skeleton.charBlockY, skeleton.room);
             if (tile.element === PrinceJS.Level.TILE_SKELETON) {
               tile.removeObject();
-              skeleton.setActive();
+              skeleton.activate();
               this.game.sound.play("BonesLeapToLife");
             }
           }
           if (skeleton.room === 3 && skeleton.setCharForRoom !== skeleton.room) {
             skeleton.setCharForRoom = skeleton.room;
-            PrinceJS.Utils.delayed(() => {
-              skeleton.charX = PrinceJS.Utils.convertBlockXtoX(4);
-              skeleton.charY = PrinceJS.Utils.convertBlockYtoY(1);
-              skeleton.land();
-              if (skeleton.charFace === -1) {
-                skeleton.turn();
-              }
-            }, 500);
+            PrinceJS.Utils.delayed(
+              this,
+              () => {
+                skeleton.charX = PrinceJS.Utils.convertBlockXtoX(4);
+                skeleton.charY = PrinceJS.Utils.convertBlockYtoY(1);
+                skeleton.land();
+                if (skeleton.charFace === -1) {
+                  skeleton.turn();
+                }
+              },
+              500
+            );
           }
         }
         break;
@@ -191,9 +209,13 @@ PrinceJS.Game.prototype = {
           !this.level.mirrorDetected
         ) {
           this.level.mirrorDetected = true;
-          PrinceJS.Utils.delayed(() => {
-            this.game.sound.play("Danger");
-          }, 400);
+          PrinceJS.Utils.delayed(
+            this,
+            () => {
+              this.game.sound.play("Danger");
+            },
+            400
+          );
         }
         tile = this.level.getTileAt(this.kid.charBlockX - this.kid.charFace, this.kid.charBlockY, this.kid.room);
         if (
@@ -218,7 +240,7 @@ PrinceJS.Game.prototype = {
         }
         if (this.shadow.visible && this.shadow.charBlockY > 0) {
           this.shadow.action = "stand";
-          this.shadow.setInvisible();
+          this.shadow.hide();
         }
         break;
 
@@ -242,7 +264,7 @@ PrinceJS.Game.prototype = {
         }
         if (this.shadow.visible && this.shadow.room === 11 && this.shadow.charBlockX === 8 && this.shadow.faceL()) {
           this.shadow.action = "stand";
-          this.shadow.setInvisible();
+          this.shadow.hide();
         }
         break;
 
@@ -260,9 +282,13 @@ PrinceJS.Game.prototype = {
           }
           if (this.kid.charBlockY === 2 && this.kid.charY >= 185) {
             this.blockCamera = true;
-            PrinceJS.Utils.delayed(() => {
-              this.nextLevel(PrinceJS.currentLevel);
-            }, 100);
+            PrinceJS.Utils.delayed(
+              this,
+              () => {
+                this.nextLevel(PrinceJS.currentLevel);
+              },
+              100
+            );
           }
         }
         break;
@@ -271,12 +297,16 @@ PrinceJS.Game.prototype = {
         if (this.level.exitDoorOpen && this.kid.room === 16 && this.kid.charBlockY === 0) {
           if (!this.level.waitForMouse) {
             this.level.waitForMouse = true;
-            PrinceJS.Utils.delayed(() => {
-              this.level.waitedForMouse = true;
-            }, 12000);
+            PrinceJS.Utils.delayed(
+              this,
+              () => {
+                this.level.waitedForMouse = true;
+              },
+              12000
+            );
           }
           if (this.level.waitedForMouse && !this.mouse) {
-            this.mouse = new PrinceJS.Mouse(this.game, this.level, 16, 9, -1);
+            this.mouse = new PrinceJS.Mouse(this, this.level, 16, 9, -1);
             this.performProgram(
               [
                 { i: "ACTION", p1: 625, p2: "scurry" },
@@ -308,14 +338,18 @@ PrinceJS.Game.prototype = {
         ) {
           this.shadow.charX = PrinceJS.Utils.convertBlockXtoX(1);
           this.shadow.charY = PrinceJS.Utils.convertBlockYtoY(1);
-          this.shadow.setVisible();
-          this.shadow.setActive();
-          PrinceJS.Utils.delayed(() => {
-            this.shadow.refracTimer = 9;
-            this.shadow.opponent = this.kid;
-            this.kid.opponent = this.shadow;
-            this.kid.opponentSync = true;
-          }, 1000);
+          this.shadow.show();
+          this.shadow.activate();
+          PrinceJS.Utils.delayed(
+            this,
+            () => {
+              this.shadow.refracTimer = 9;
+              this.shadow.opponent = this.kid;
+              this.kid.opponent = this.shadow;
+              this.kid.opponentSync = true;
+            },
+            1000
+          );
         }
         if (
           !this.shadow.active &&
@@ -329,15 +363,23 @@ PrinceJS.Game.prototype = {
           this.kid.mergeShadowPosition();
           this.kid.showShadowOverlay();
           this.kid.flashShadowOverlay();
-          PrinceJS.Utils.flashWhiteShadowMerge(this.game);
-          PrinceJS.Utils.delayed(() => {
-            if (this.level.shadowMerge) {
-              this.game.sound.play("Prince");
-            }
-            PrinceJS.Utils.delayed(() => {
-              this.level.leapOfFaith = true;
-            }, 13000);
-          }, 2000);
+          PrinceJS.Utils.flashWhiteShadowMerge(this);
+          PrinceJS.Utils.delayed(
+            this,
+            () => {
+              if (this.level.shadowMerge) {
+                this.game.sound.play("Prince");
+              }
+              PrinceJS.Utils.delayed(
+                this,
+                () => {
+                  this.level.leapOfFaith = true;
+                },
+                13000
+              );
+            },
+            2000
+          );
         }
         if (this.level.leapOfFaith && !this.level.leapOfFaithSetup) {
           this.level.leapOfFaithSetup = true;
@@ -389,13 +431,17 @@ PrinceJS.Game.prototype = {
           }
           if (!jaffar.alive && !this.level.triggerOpenExitDoor) {
             this.level.triggerOpenExitDoor = true;
-            PrinceJS.Utils.delayed(() => {
-              let button = this.level.getTileAt(0, 0, 24);
-              if (button.element === PrinceJS.Level.TILE_RAISE_BUTTON) {
-                button.mute = true;
-                button.push();
-              }
-            }, 5000);
+            PrinceJS.Utils.delayed(
+              this,
+              () => {
+                let button = this.level.getTileAt(0, 0, 24);
+                if (button.element === PrinceJS.Level.TILE_RAISE_BUTTON) {
+                  button.mute = true;
+                  button.push();
+                }
+              },
+              5000
+            );
           }
         }
         break;
@@ -453,7 +499,7 @@ PrinceJS.Game.prototype = {
             fn = operation.i;
             break;
         }
-        return PrinceJS.Utils.perform(fn, operation.p1);
+        return PrinceJS.Utils.perform(this, fn, operation.p1);
       });
     }, Promise.resolve());
   },
@@ -509,7 +555,7 @@ PrinceJS.Game.prototype = {
   restartGame() {
     PrinceJS.Init();
 
-    this.input.keyboard.onDownCallback = null;
+    PrinceJS.Utils.onAnyKey(this, null);
     this.leaveTo("Title");
   },
 
@@ -549,10 +595,14 @@ PrinceJS.Game.prototype = {
   },
 
   timeUp() {
-    PrinceJS.Utils.delayed(() => {
-      PrinceJS.currentLevel = 16;
-      this.leaveTo("Cutscene");
-    }, 1000);
+    PrinceJS.Utils.delayed(
+      this,
+      () => {
+        PrinceJS.currentLevel = 16;
+        this.leaveTo("Cutscene");
+      },
+      1000
+    );
   },
 
   outOfRoom() {
@@ -576,7 +626,7 @@ PrinceJS.Game.prototype = {
 
   leaveTo: function (state) {
     this.leavingState = true;
-    this.state.start(state);
+    this.scene.start(state);
   },
 
   changeRoom: function (room, cameraRoom) {
@@ -601,8 +651,10 @@ PrinceJS.Game.prototype = {
     }
     room = cameraRoom || room;
     if (this.level.rooms[room]) {
-      this.game.camera.x = this.level.rooms[room].x * PrinceJS.SCREEN_WIDTH * PrinceJS.SCALE_FACTOR;
-      this.game.camera.y = this.level.rooms[room].y * PrinceJS.ROOM_HEIGHT * PrinceJS.SCALE_FACTOR;
+      this.cameras.main.setScroll(
+        this.level.rooms[room].x * PrinceJS.SCREEN_WIDTH,
+        this.level.rooms[room].y * PrinceJS.ROOM_HEIGHT
+      );
     }
   },
 
@@ -689,4 +741,4 @@ PrinceJS.Game.prototype = {
       this.enemies[i].checkLooseFloor(tile);
     }
   }
-};
+});
