@@ -492,7 +492,6 @@ Object.assign(PrinceJS.Game.prototype, {
           case "REM_ACTOR":
             fn = () => {
               object.visible = false;
-              object.kill();
             };
             break;
           default:
