@@ -23,3 +23,7 @@ rules:
   strict: [warn]
   curly: [error]
   no-constant-condition: [error, { checkLoops: false }]
+overrides:
+  - files: ["tests/**/*.js"]
+    env:
+      browser: true

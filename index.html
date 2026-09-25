@@ -47,6 +47,8 @@
     <script type="text/javascript">
       window.onload = function () {
         let game = new Phaser.Game(640, 400, Phaser.AUTO, "gameContainer", null, false, false);
+        // Exposed for the automated tests in tests/
+        PrinceJS.game = game;
 
         game.state.add("Boot", PrinceJS.Boot);
         game.state.add("Preloader", PrinceJS.Preloader);

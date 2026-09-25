@@ -9,7 +9,9 @@
   "scripts": {
     "start": "http-server",
     "lint": "npm run prettier && eslint . --fix",
-    "prettier": "prettier \"**/*.{js,md,html}\" --write --loglevel error"
+    "prettier": "prettier \"**/*.{js,md,html}\" --write --loglevel error",
+    "test": "playwright test",
+    "test:reference": "playwright test reference --update-snapshots"
   },
   "repository": {
     "type": "git",
@@ -20,6 +22,7 @@
   },
   "homepage": "https://github.com/oklemenz/PrinceJS#readme",
   "devDependencies": {
+    "@playwright/test": "^1.56.1",
     "eslint": "^7.19.0",
     "eslint-config": "^0.3.0",
     "eslint-config-prettier": "^6.14.0",

@@ -15,3 +15,14 @@ Prince of Persia reimplementation written in HTML5/Javascript
 - Chrome:
   - `localhost:8080`
 - Enjoy!
+
+## Tests
+
+Browser tests (Playwright + Chromium) boot the game, load every level, go through the
+level transitions, cutscenes and credits, and fail on any uncaught error or missing asset.
+
+- `npx playwright install chromium` (once)
+- `npm test`
+
+`tests/reference.spec.js` compares every level against reference screenshots taken at a
+deterministic point. They are platform specific; regenerate them with `npm run test:reference`.
