@@ -26,6 +26,12 @@ PrinceJS.Game.prototype = {
   create: function () {
     this.game.sound.stopAll();
 
+    // Phaser reuses this state object, so per-run state must be reset here
+    this.enemies = [];
+    this.continueTimer = -1;
+    this.pressButtonToContinueTimer = -1;
+    this.leavingState = false;
+
     if (PrinceJS.currentLevel === 1) {
       PrinceJS.firstLand = true;
     }
@@ -111,6 +117,10 @@ PrinceJS.Game.prototype = {
   update: function () {},
 
   updateWorld: function () {
+    // A state change only happens on the next frame; the world belongs to the old level until then
+    if (this.leavingState) {
+      return;
+    }
     this.level.update();
     this.kid.updateActor();
     for (let i = 0; i < this.enemies.length; i++) {
@@ -500,7 +510,7 @@ PrinceJS.Game.prototype = {
     PrinceJS.Init();
 
     this.input.keyboard.onDownCallback = null;
-    this.state.start("Title");
+    this.leaveTo("Title");
   },
 
   restartLevel() {
@@ -541,7 +551,7 @@ PrinceJS.Game.prototype = {
   timeUp() {
     PrinceJS.Utils.delayed(() => {
       PrinceJS.currentLevel = 16;
-      this.state.start("Cutscene");
+      this.leaveTo("Cutscene");
     }, 1000);
   },
 
@@ -557,15 +567,16 @@ PrinceJS.Game.prototype = {
   },
 
   reset: function (suppressCutscene) {
-    this.continueTimer = -1;
-    this.pressButtonToContinueTimer = -1;
-
-    this.enemies = [];
     if (!suppressCutscene && [2, 4, 6, 8, 9, 12, 15].indexOf(PrinceJS.currentLevel) > -1) {
-      this.state.start("Cutscene");
+      this.leaveTo("Cutscene");
     } else {
-      this.state.start("Game");
+      this.leaveTo("Game");
     }
+  },
+
+  leaveTo: function (state) {
+    this.leavingState = true;
+    this.state.start(state);
   },
 
   changeRoom: function (room, cameraRoom) {
