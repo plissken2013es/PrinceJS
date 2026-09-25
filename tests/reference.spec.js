@@ -4,7 +4,7 @@
 // randomness is seeded, the world only advances a fixed number of ticks and
 // the screenshot is taken once the timed HUD messages are gone.
 // They are the baseline to compare against when porting to another engine.
-// Regenerate with: npm run test:reference
+// Recorded from the original Phaser 2 version: npm run test:baseline
 
 const { test, expect } = require("@playwright/test");
 const { boot, seedRandom, resetRandom, startLevel, waitForHudIdle, freezeWorld, stepWorld } = require("./helpers");
