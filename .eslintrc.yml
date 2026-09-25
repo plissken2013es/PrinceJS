@@ -29,3 +29,5 @@ overrides:
     globals:
       PrinceJS: false
       Phaser: false
+    rules:
+      no-restricted-modules: off

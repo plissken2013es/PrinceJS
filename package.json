@@ -9,7 +9,7 @@
     "lint": "npm run prettier && eslint . --fix",
     "prettier": "prettier \"**/*.{js,md,html}\" --write --loglevel error",
     "test": "playwright test",
-    "test:reference": "playwright test reference --update-snapshots"
+    "test:baseline": "bash scripts/phaser2-baseline.sh"
   },
   "repository": {
     "type": "git",

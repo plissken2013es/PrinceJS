@@ -29,7 +29,13 @@ level transitions, cutscenes and credits, and fail on any uncaught error or miss
 - `npx playwright install chromium` (once)
 - `npm test`
 
-`tests/reference.spec.js` compares every level against reference screenshots taken at a
-deterministic point. The committed screenshots were taken with the original Phaser 2 version of
-the game, so they check that the port to Phaser 4 looks the same. They are platform specific;
-regenerate them with `npm run test:reference`.
+The game is compared against its original Phaser 2 version, from before the port to Phaser 4:
+
+- `tests/reference.spec.js` compares a screenshot of every level at a deterministic point.
+- `tests/replay.spec.js` replays fixed key sequences in every level, plus scenarios for specific
+  mechanics (fights, potions, traps, exit door, mirror, shadow, mouse...). The game state after
+  every step must match the recorded trace, and the screen must match at checkpoints.
+
+The baselines come from the Phaser 2 build (`npm run test:baseline`), and the screenshots are
+platform specific. `PHASER=2` runs the tests against a Phaser 2 build, see
+`scripts/phaser2-baseline.sh`.
