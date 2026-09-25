@@ -16,6 +16,7 @@ Object.assign(PrinceJS.EndTitle.prototype, {
     PrinceJS.Utils.setupCamera(this);
 
     this.tick = 0;
+    this.logicTime = 0;
 
     this.game.sound.play("Epilogue");
 
@@ -41,7 +42,11 @@ Object.assign(PrinceJS.EndTitle.prototype, {
     PrinceJS.Utils.onAnyKey(this, this.next.bind(this));
   },
 
-  update: function () {
+  update: function (time, delta) {
+    if (!PrinceJS.Utils.logicFrame(this, delta)) {
+      return;
+    }
+
     switch (this.tick) {
       case 100:
         this.tween1.play();

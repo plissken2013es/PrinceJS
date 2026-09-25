@@ -42,9 +42,6 @@ window.addEventListener("load", () => {
     parent: "gameContainer",
     backgroundColor: "#000000",
     pixelArt: true,
-    // Phaser 2 ran the game logic at most 60 times per second, whatever the display rate.
-    // The title and credits count frames, so they would play faster on faster displays.
-    fps: { limit: 60 },
     // The first scene in the list starts automatically
     scene: [
       PrinceJS.Boot,

@@ -110,6 +110,21 @@ PrinceJS.Utils = {
     );
   },
 
+  // Phaser 2 ran the game logic at most 60 times per second, whatever the display rate,
+  // while Phaser 4 updates once per display frame. Screens that count frames call this
+  // from update() and only advance when it returns true, to keep the Phaser 2 pace.
+  // (Phaser 4's fps limit is no substitute: it speeds up the scene clocks.)
+  logicFrame: function (scene, delta) {
+    let step = 1000 / 60;
+    // Like Phaser 2: at most 3 steps of catch-up time per frame, one update per frame
+    scene.logicTime = (scene.logicTime || 0) + Math.max(Math.min(step * 3, delta), 0);
+    if (scene.logicTime >= step) {
+      scene.logicTime -= step;
+      return true;
+    }
+    return false;
+  },
+
   random: function (max) {
     return Math.floor(Math.random() * Math.floor(max));
   },

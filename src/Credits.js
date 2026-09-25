@@ -13,6 +13,7 @@ Object.assign(PrinceJS.Credits.prototype, {
 
   create: function () {
     this.tick = 0;
+    this.logicTime = 0;
     PrinceJS.Utils.setupCamera(this);
 
     this.textBack = this.add.image(0, 0, "title", "marry_jaffar").setOrigin(0, 0);
@@ -42,7 +43,11 @@ Object.assign(PrinceJS.Credits.prototype, {
     PrinceJS.Utils.onAnyKey(this, this.play.bind(this));
   },
 
-  update: function () {
+  update: function (time, delta) {
+    if (!PrinceJS.Utils.logicFrame(this, delta)) {
+      return;
+    }
+
     switch (this.tick) {
       case 0:
         this.tween1.play();

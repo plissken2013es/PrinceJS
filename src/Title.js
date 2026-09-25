@@ -17,6 +17,7 @@ Object.assign(PrinceJS.Title.prototype, {
     PrinceJS.Utils.setupCamera(this);
 
     this.tick = 0;
+    this.logicTime = 0;
 
     this.back = this.add.image(0, 0, "title", "main_background").setOrigin(0, 0);
     this.back.alpha = 0;
@@ -69,7 +70,11 @@ Object.assign(PrinceJS.Title.prototype, {
     PrinceJS.Utils.onAnyKey(this, this.play.bind(this));
   },
 
-  update: function () {
+  update: function (time, delta) {
+    if (!PrinceJS.Utils.logicFrame(this, delta)) {
+      return;
+    }
+
     switch (this.tick) {
       case 0:
         this.tween1.play();
