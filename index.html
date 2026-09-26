@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>PrinceJS - An HTML5 port of Prince of Persia</title>
+    <style>
+      body {
+        margin: 0;
+        background: #000;
+        color: #fff;
+        font-family: sans-serif;
+      }
+      #screen {
+        position: relative;
+        width: 640px;
+        height: 400px;
+        margin: 8px;
+      }
+      #screen canvas {
+        display: block;
+        image-rendering: pixelated;
+      }
+      /* the menu items are real links over the canvas */
+      #screen a {
+        position: absolute;
+        left: 160px;
+        width: 320px;
+        height: 32px;
+        color: transparent;
+        overflow: hidden;
+        outline: none;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="screen">
+      <canvas id="menu" width="640" height="400"></canvas>
+      <a href="phaser2/" style="top: 240px">Original version (Phaser 2)</a>
+      <a href="phaser4/" style="top: 276px">Phaser 4 version</a>
+    </div>
+    <script>
+      (function () {
+        // Uses the game's own title art and bitmap font, from the Phaser 4 build
+        var ASSETS = "phaser4/assets/";
+        var SCALE = 2;
+
+        var canvas = document.getElementById("menu");
+        var ctx = canvas.getContext("2d");
+        ctx.imageSmoothingEnabled = false;
+        var links = Array.prototype.slice.call(document.querySelectorAll("#screen a"));
+
+        var ITEMS = [
+          { text: "ORIGINAL  (PHASER 2)", y: 124 },
+          { text: "PHASER 4", y: 142 }
+        ];
+        var selected = 0;
+
+        function load(url, type) {
+          return fetch(url).then(function (response) {
+            return type === "json" ? response.json() : response.text();
+          });
+        }
+
+        function image(url) {
+          return new Promise(function (resolve) {
+            var img = new Image();
+            img.onload = function () {
+              resolve(img);
+            };
+            img.src = url;
+          });
+        }
+
+        var title, titleFrames, font, glyphs;
+
+        Promise.all([
+          image(ASSETS + "gfx/title.png"),
+          load(ASSETS + "gfx/title.json", "json"),
+          image(ASSETS + "font/prince_0.png"),
+          load(ASSETS + "font/prince.fnt", "text")
+        ]).then(function (loaded) {
+          title = loaded[0];
+          titleFrames = loaded[1].frames;
+          font = loaded[2];
+          glyphs = {};
+          var xml = new DOMParser().parseFromString(loaded[3], "text/xml");
+          Array.prototype.forEach.call(xml.getElementsByTagName("char"), function (char) {
+            var glyph = {};
+            ["id", "x", "y", "width", "height", "xoffset", "yoffset", "xadvance"].forEach(function (key) {
+              glyph[key] = parseInt(char.getAttribute(key), 10);
+            });
+            glyphs[glyph.id] = glyph;
+          });
+          requestAnimationFrame(draw);
+        });
+
+        // Draws a frame of the title atlas, in game pixels (320x200)
+        function frame(name, x, y) {
+          var f = titleFrames[name].frame;
+          ctx.drawImage(title, f.x, f.y, f.w, f.h, x * SCALE, y * SCALE, f.w * SCALE, f.h * SCALE);
+        }
+
+        function textWidth(str) {
+          var width = 0;
+          for (var i = 0; i < str.length; i++) {
+            var glyph = glyphs[str.charCodeAt(i)];
+            width += glyph ? glyph.xadvance : 0;
+          }
+          return width;
+        }
+
+        // Draws text with the game's bitmap font, centered on x, in game pixels
+        function text(str, x, y, alpha) {
+          ctx.globalAlpha = alpha === undefined ? 1 : alpha;
+          var cursor = Math.round(x - textWidth(str) / 2);
+          for (var i = 0; i < str.length; i++) {
+            var glyph = glyphs[str.charCodeAt(i)];
+            if (!glyph) {
+              continue;
+            }
+            ctx.drawImage(
+              font,
+              glyph.x,
+              glyph.y,
+              glyph.width,
+              glyph.height,
+              (cursor + glyph.xoffset) * SCALE,
+              (y + glyph.yoffset) * SCALE,
+              glyph.width * SCALE,
+              glyph.height * SCALE
+            );
+            cursor += glyph.xadvance;
+          }
+          ctx.globalAlpha = 1;
+        }
+
+        var tick = 0;
+        function draw() {
+          frame("main_background", 0, 0);
+          frame("game_name", 24, 8);
+
+          // a dark panel inside the arch for the menu
+          ctx.fillStyle = "rgba(0, 0, 0, 0.75)";
+          ctx.fillRect(52 * SCALE, 98 * SCALE, 216 * SCALE, 76 * SCALE);
+
+          text("CHOOSE A VERSION", 160, 104);
+          ITEMS.forEach(function (item, i) {
+            var isSelected = i === selected;
+            text(item.text, 160, item.y, isSelected ? 1 : 0.45);
+            if (isSelected && Math.floor(tick / 20) % 2 === 0) {
+              var half = textWidth(item.text) / 2;
+              text(">", 160 - half - 10, item.y);
+              text("<", 160 + half + 10, item.y);
+            }
+          });
+          text("ARROWS TO CHOOSE, ENTER TO PLAY", 160, 160, 0.8);
+
+          tick++;
+          requestAnimationFrame(draw);
+        }
+
+        function select(i) {
+          selected = (i + ITEMS.length) % ITEMS.length;
+        }
+
+        links.forEach(function (link, i) {
+          link.addEventListener("mouseenter", function () {
+            select(i);
+          });
+          link.addEventListener("focus", function () {
+            select(i);
+          });
+        });
+
+        window.addEventListener("keydown", function (event) {
+          if (event.code === "ArrowUp" || event.code === "ArrowLeft") {
+            select(selected - 1);
+          } else if (event.code === "ArrowDown" || event.code === "ArrowRight") {
+            select(selected + 1);
+          } else if (event.code === "Enter" || event.code === "Space") {
+            location.href = links[selected].href;
+          } else {
+            return;
+          }
+          event.preventDefault();
+        });
+      })();
+    </script>
+  </body>
+</html>
