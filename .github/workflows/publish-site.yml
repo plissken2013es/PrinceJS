@@ -1,0 +1,62 @@
+# Builds the website (`npm run build:site`: the menu, the original Phaser 2
+# version from the phaser2 branch and the Phaser 4 one) and publishes it as a
+# new commit on the gh-pages branch, which GitHub Pages serves.
+name: Publish website
+
+on:
+  push:
+    branches: [phaser4, phaser2]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+# one publication at a time, in order
+concurrency:
+  group: publish-site
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          # the site is always built from phaser4, also when phaser2 changes
+          ref: phaser4
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      - name: Fetch the Phaser 2 version
+        run: git fetch --depth=1 origin phaser2:refs/remotes/origin/phaser2
+
+      - run: npm run build:site
+
+      - name: Commit the site to gh-pages
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          if git fetch --depth=1 origin gh-pages; then
+            git worktree add -B gh-pages ../gh-pages origin/gh-pages
+          else
+            git worktree add --orphan -b gh-pages ../gh-pages
+          fi
+
+          cd ../gh-pages
+          git rm -rq --ignore-unmatch .
+          cp -a "$GITHUB_WORKSPACE/dist-site/." .
+          git add -A
+
+          if git diff --cached --quiet; then
+            echo "The site hasn't changed"
+            exit 0
+          fi
+
+          git commit -m "Publish the website from $(git -C "$GITHUB_WORKSPACE" rev-parse --short HEAD)"
+          git push origin gh-pages

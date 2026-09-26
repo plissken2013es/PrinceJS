@@ -4,7 +4,8 @@ Prince of Persia reimplementation written in HTML5/Javascript, built on [Phaser 
 
 ## Play Online
 
-- Chrome: https://oklemenz.github.io/PrinceJS/
+- https://plissken2013es.github.io/PrinceJS/ lets you choose between the original version
+  (Phaser 2) and the port to Phaser 4
 
 ## Play Locally
 
@@ -20,6 +21,12 @@ Prince of Persia reimplementation written in HTML5/Javascript, built on [Phaser 
 
 - `npm run build` creates a static build in `dist/` (game files live in `public/`)
 - `npm run preview` serves that build
+- `npm run build:site` builds the website in `dist-site/`: a menu, the original version from
+  the `phaser2` branch and the Phaser 4 build. `.github/workflows/publish-site.yml` publishes it
+  to the `gh-pages` branch, which GitHub Pages serves
+
+The `phaser2` branch keeps the original Phaser 2 version, with only the bug fixes made before
+the port.
 
 ## Tests
 

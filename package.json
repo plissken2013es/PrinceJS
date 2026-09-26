@@ -6,6 +6,7 @@
     "start": "vite",
     "build": "vite build",
     "preview": "vite preview",
+    "build:site": "node scripts/build-site.mjs",
     "lint": "npm run prettier && eslint . --fix",
     "prettier": "prettier \"**/*.{js,md,html}\" --write --loglevel error",
     "test": "playwright test",
