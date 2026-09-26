@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>PrinceJS Level Editor</title>
+    <style>:root{--bg:#101018;--panel:#181824;--panel-2:#20202e;--line:#2e2e40;--text:#e6e2d6;--muted:#9a96a8;--accent:#ffd23f;--danger:#ff5a4f;--link:#7fc8ff}*{box-sizing:border-box}html,body{height:100%;margin:0}body{background:var(--bg);color:var(--text);grid-template-rows:auto 1fr auto;font:13px/1.4 system-ui,sans-serif;display:grid}header,footer{background:var(--panel);border-bottom:1px solid var(--line);flex-wrap:wrap;align-items:center;gap:8px;padding:6px 10px;display:flex}footer{border-top:1px solid var(--line);color:var(--muted);border-bottom:0;justify-content:space-between}header h1{color:var(--accent);letter-spacing:.04em;margin:0 8px 0 0;font-size:15px}#level-title{color:var(--muted);margin-right:auto}.sep{background:var(--line);align-self:stretch;width:1px}button,select,input{font:inherit;color:var(--text);background:var(--panel-2);border:1px solid var(--line);border-radius:4px;padding:4px 8px}button{cursor:pointer}button:hover:not(:disabled){border-color:var(--muted)}button:disabled{opacity:.4;cursor:default}button.primary{color:var(--accent);background:#3b3413;border-color:#8a7420}button.danger{color:var(--danger)}a{color:var(--link)}main{grid-template-columns:236px 1fr 280px;min-height:0;display:grid}aside{background:var(--panel);padding:10px;overflow-y:auto}#left{border-right:1px solid var(--line)}#right{border-left:1px solid var(--line)}h2{color:var(--accent);margin:0 0 6px;font-size:14px}h3{color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin:12px 0 4px;font-size:12px}section+section{border-top:1px solid var(--line);margin-top:16px;padding-top:12px}#tools{grid-template-columns:1fr 1fr;gap:4px;display:grid}.tool{justify-content:space-between;align-items:center;display:flex}.tool.active,#palette button.active{border-color:var(--accent);background:#2e2a16}kbd{color:var(--muted);font-size:10px}#tool-help{color:var(--muted);min-height:3em;margin:6px 0 0}#palette{grid-template-columns:repeat(4,1fr);gap:4px;display:grid}#palette button{aspect-ratio:56/79;background:#000;padding:2px}#palette img{width:100%;height:100%;image-rendering:pixelated;display:block}#view-options label{display:block}.zoom{align-items:center;gap:4px;margin-top:6px;display:flex}#zoom{text-align:center;min-width:44px;color:var(--muted)}#view{min-width:0;min-height:0;position:relative;overflow:hidden}#view canvas{display:block}#pick{background:#0e2a3a;border:1px solid #4fc3ff;border-radius:4px;align-items:center;gap:10px;padding:6px 10px;display:flex;position:absolute;top:8px;left:50%;transform:translate(-50%)}#pick[hidden]{display:none}.field{grid-template-columns:90px 1fr;align-items:center;gap:6px;margin:4px 0;display:grid}.field span{color:var(--muted)}.field input,.field select{width:100%}.check{align-items:center;gap:6px;margin:4px 0;display:flex}.actions{flex-wrap:wrap;gap:4px;margin-top:8px;display:flex}.coords,.hint{color:var(--muted);margin:4px 0}.note{color:#ffb86b;margin:6px 0}ul.links,#problems{margin:0;padding:0;list-style:none}ul.links li,#problems li{border-bottom:1px solid var(--line);justify-content:space-between;align-items:center;padding:3px 0;display:flex}#problems li{color:#ffb86b}#problems li.info{color:var(--muted)}#problems li.ok{color:#4cd964}button.remove{color:var(--danger);padding:0 6px}dl.neighbours{grid-template-columns:60px 1fr;margin:6px 0;display:grid}dl.neighbours dt{color:var(--muted)}dl.neighbours dd{margin:0}#play-overlay{z-index:10;background:#000000d9;flex-direction:column;justify-content:center;align-items:center;gap:10px;display:flex;position:fixed;inset:0}#play-overlay[hidden]{display:none}#play-frame{border:1px solid var(--line);background:#000;width:656px;height:416px}#toast{background:var(--panel-2);border:1px solid var(--accent);opacity:0;pointer-events:none;z-index:20;border-radius:4px;padding:8px 14px;transition:opacity .2s;position:fixed;bottom:40px;left:50%;transform:translate(-50%)}#toast.show{opacity:1}</style>
+    <script type="module" crossorigin src="./bundle/editor-Co5R1HKT.js"></script>
+    <link rel="modulepreload" crossorigin href="./bundle/modules-CCdBTNgq.js">
+  </head>
+  <body>
+    <header>
+      <h1>PRINCE OF PERSIA · LEVEL EDITOR</h1>
+      <span id="level-title"></span>
+      <select id="level-select" title="Open an original level or start a new one"></select>
+      <button id="import" title="Open a level file (.json)">Open file…</button>
+      <input id="import-file" type="file" accept=".json,application/json" hidden />
+      <button id="export" title="Save the level as a file (Ctrl+S)">Save file</button>
+      <span class="sep"></span>
+      <button id="undo" title="Undo (Ctrl+Z)">Undo</button>
+      <button id="redo" title="Redo (Ctrl+Y)">Redo</button>
+      <span class="sep"></span>
+      <button id="play" class="primary" title="Play the level (P)">▶ Play</button>
+      <button id="play-here" title="Play from the selected tile (Shift+P)">▶ From selected tile</button>
+      <a href="index.html" title="Play the game">Game</a>
+      <a href="../" title="Back to the menu">Menu</a>
+    </header>
+    <main>
+      <aside id="left">
+        <section>
+          <h2>Tools</h2>
+          <div id="tools"></div>
+          <p id="tool-help"></p>
+        </section>
+        <section>
+          <h2>Tiles</h2>
+          <div id="palette"></div>
+          <p id="brush-name" class="hint"></p>
+        </section>
+        <section>
+          <h2>View</h2>
+          <div id="view-options"></div>
+          <div class="zoom">
+            <button id="zoom-out" title="Zoom out (-)">−</button>
+            <span id="zoom"></span>
+            <button id="zoom-in" title="Zoom in (+)">+</button>
+            <button id="zoom-fit" title="Show the whole level (F)">Fit</button>
+          </div>
+          <p class="hint">Wheel: zoom. Right or middle drag, or Space + drag: move the view.</p>
+        </section>
+      </aside>
+      <div id="view">
+        <div id="pick" hidden><span id="pick-message"></span><button id="pick-cancel">Cancel</button></div>
+      </div>
+      <aside id="right">
+        <div id="properties"></div>
+        <div id="level-properties"></div>
+        <section>
+          <h2>Problems <span id="problems-count"></span></h2>
+          <ul id="problems"></ul>
+        </section>
+      </aside>
+    </main>
+    <footer>
+      <span id="status"></span>
+      <span>Esc: cancel · Del: delete · Ctrl+Z / Ctrl+Y: undo / redo</span>
+    </footer>
+    <div id="play-overlay" hidden>
+      <iframe id="play-frame" title="Test play"></iframe>
+      <div>
+        Arrows, Shift and Up to play · Esc returns to the editor
+        <button id="play-close">Back to the editor</button>
+      </div>
+    </div>
+    <div id="toast"></div>
+  </body>
+</html>
