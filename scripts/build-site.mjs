@@ -4,9 +4,10 @@
  *
  *   index.html   a menu to choose the version to play (from site/)
  *   phaser2/     the original Phaser 2 version, from the phaser2 branch as it is
- *   phaser4/     the Phaser 4 version (the Vite build)
+ *   phaser4/     the Phaser 4 version (the Vite build), with the level editor
+ *                (phaser4/editor.html)
  *
- * Both games get a "MENU" link back to the menu.
+ * Both games and the editor get a link back to the menu.
  *
  * Usage: npm run build:site [-- <git ref of the Phaser 2 version>]
  */
@@ -39,6 +40,7 @@ fs.writeFileSync(path.join(OUT, ".nojekyll"), "");
 
 addMenuLink(path.join(phaser2, "index.html"));
 addMenuLink(path.join(OUT, "phaser4", "index.html"));
+addEditorMenuLink(path.join(OUT, "phaser4", "editor.html"));
 
 console.log(`Site built in ${OUT}/ (Phaser 2 version from ${PHASER2_REF})`);
 
@@ -62,6 +64,16 @@ function addMenuLink(file) {
   const updated = html.replace("</body>", `  ${link}\n  </body>`);
   if (updated === html) {
     throw new Error(`No </body> in ${file}`);
+  }
+  fs.writeFileSync(file, updated);
+}
+
+// The editor fills the window: its link goes in the header, next to the game's
+function addEditorMenuLink(file) {
+  const html = fs.readFileSync(file, "utf8");
+  const updated = html.replace("<!-- menu -->", '<a href="../" title="Back to the menu">Menu</a>');
+  if (updated === html) {
+    throw new Error(`No menu placeholder in ${file}`);
   }
   fs.writeFileSync(file, updated);
 }

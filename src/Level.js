@@ -207,6 +207,10 @@ PrinceJS.Level.prototype = {
   },
 
   fireEvent: function (event, type) {
+    // A button of an edited level may not be linked to anything yet
+    if (!this.events[event]) {
+      return;
+    }
     let room = this.events[event].room;
     let x = (this.events[event].location - 1) % 10;
     let y = Math.floor((this.events[event].location - 1) / 10);
@@ -217,12 +221,15 @@ PrinceJS.Level.prototype = {
       tile = this.getTileAt(x + 1, y, room);
     }
 
+    // Only gates and exit doors can be opened or closed
     if (type === PrinceJS.Level.TILE_RAISE_BUTTON) {
-      tile.raise();
+      if (tile.raise) {
+        tile.raise();
+      }
       if ([PrinceJS.Level.TILE_EXIT_LEFT, PrinceJS.Level.TILE_EXIT_RIGHT].includes(tile.element)) {
         this.exitDoorOpen = true;
       }
-    } else {
+    } else if (tile.drop) {
       tile.drop();
     }
 

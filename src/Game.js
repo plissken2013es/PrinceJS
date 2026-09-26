@@ -21,9 +21,14 @@ PrinceJS.Game = class extends Phaser.Scene {
 
 Object.assign(PrinceJS.Game.prototype, {
   preload: function () {
-    // Every level is loaded under the same key
+    // Every level is loaded under the same key. The level builder changes the data,
+    // so a level being test played is copied every time.
     this.cache.json.remove("level");
-    this.load.json("level", "assets/maps/level" + PrinceJS.currentLevel + ".json");
+    if (PrinceJS.testPlay) {
+      this.cache.json.add("level", JSON.parse(JSON.stringify(PrinceJS.testPlay.level)));
+    } else {
+      this.load.json("level", "assets/maps/level" + PrinceJS.currentLevel + ".json");
+    }
 
     if (!PrinceJS.startTime) {
       PrinceJS.startTime = new Date();
@@ -91,6 +96,9 @@ Object.assign(PrinceJS.Game.prototype, {
       );
     }
     this.kid.charX += json.prince.offset || 0;
+    if (PrinceJS.testPlay && PrinceJS.testPlay.sword !== undefined) {
+      this.kid.hasSword = PrinceJS.testPlay.sword;
+    }
 
     this.kid.onChangeRoom.add(this.changeRoom, this);
     this.kid.onNextLevel.add(this.nextLevel, this);
@@ -194,6 +202,10 @@ Object.assign(PrinceJS.Game.prototype, {
         break;
 
       case 4:
+        // Scripted for the original level, which has a shadow (a test played level may not)
+        if (!this.shadow) {
+          break;
+        }
         if (this.level.exitDoorOpen && this.kid.room === 11 && this.kid.charBlockY === 0) {
           tile = this.level.getTileAt(4, 0, 4);
           if (tile) {
@@ -245,6 +257,9 @@ Object.assign(PrinceJS.Game.prototype, {
         break;
 
       case 5:
+        if (!this.shadow) {
+          break;
+        }
         tile = this.level.getTileAt(1, 0, 24);
         if (tile.state === PrinceJS.Tile.Gate.STATE_RAISING && !this.shadow.visible && this.shadow.faceR()) {
           this.shadow.visible = true;
@@ -269,6 +284,9 @@ Object.assign(PrinceJS.Game.prototype, {
         break;
 
       case 6:
+        if (!this.shadow) {
+          break;
+        }
         if (this.firstUpdate) {
           this.shadow.charX += 8;
         }
@@ -324,6 +342,9 @@ Object.assign(PrinceJS.Game.prototype, {
         break;
 
       case 12:
+        if (!this.shadow) {
+          break;
+        }
         if (
           this.kid.room === 20 &&
           this.kid.charBlockY === 1 &&
@@ -552,6 +573,11 @@ Object.assign(PrinceJS.Game.prototype, {
   },
 
   restartGame() {
+    if (PrinceJS.testPlay) {
+      PrinceJS.InitTestPlay();
+      this.leaveTo("Game");
+      return;
+    }
     PrinceJS.Init();
 
     PrinceJS.Utils.onAnyKey(this, null);
@@ -564,6 +590,11 @@ Object.assign(PrinceJS.Game.prototype, {
 
   nextLevel: function (triggerLevel, skipped = false) {
     if (triggerLevel !== undefined && triggerLevel !== PrinceJS.currentLevel) {
+      return;
+    }
+
+    if (PrinceJS.testPlay) {
+      this.endTestPlay();
       return;
     }
 
@@ -593,7 +624,19 @@ Object.assign(PrinceJS.Game.prototype, {
     this.continueTimer = 10;
   },
 
+  // The level being test played is completed: tells the editor, then plays it again
+  endTestPlay: function () {
+    if (window.parent !== window) {
+      window.parent.postMessage({ type: "princejs-test-play", result: "completed" }, location.origin);
+    }
+    this.restartGame();
+  },
+
   timeUp() {
+    if (PrinceJS.testPlay) {
+      this.restartGame();
+      return;
+    }
     PrinceJS.Utils.delayed(
       this,
       () => {

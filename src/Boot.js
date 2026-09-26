@@ -30,6 +30,18 @@ PrinceJS.Init = function () {
 };
 PrinceJS.Init();
 
+// Test play from the level editor (editor.html): the game only plays the level the
+// editor saved, as { level, sword, health }, and reports back when it is completed
+PrinceJS.TEST_PLAY_KEY = "princejs-test-play";
+PrinceJS.testPlay = null;
+
+PrinceJS.InitTestPlay = function () {
+  PrinceJS.Init();
+  PrinceJS.currentLevel = PrinceJS.testPlay.level.number;
+  PrinceJS.maxHealth = PrinceJS.testPlay.health || 3;
+  PrinceJS.danger = false;
+};
+
 PrinceJS.Boot = class extends Phaser.Scene {
   constructor() {
     super("Boot");

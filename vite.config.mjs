@@ -7,6 +7,10 @@ export default defineConfig({
   build: {
     // "assets" is taken by the game's own files in public/assets
     assetsDir: "bundle",
+    // The game and the level editor
+    rollupOptions: {
+      input: { main: "index.html", editor: "editor.html" }
+    },
     // Phaser alone is about 1.3 MB minified
     chunkSizeWarningLimit: 1600
   }

@@ -125,7 +125,7 @@ PrinceJS.LevelBuilder.prototype = {
         }
 
         if (this.type === PrinceJS.Level.TYPE_DUNGEON) {
-          tile.frontSprite.setFrame(wallType + "_" + tileSeed);
+          tile.frontSprite.setFrame(this.wallFrame(tile.key, wallType, tileSeed));
         } else {
           // Palace walls: colored bricks drawn instead of the wall sprite, then the wall pattern on top
           let bricks = new Phaser.GameObjects.Graphics(this.scene);
@@ -143,7 +143,7 @@ PrinceJS.LevelBuilder.prototype = {
           tile.frontSprite.visible = false;
           tile.front.add(bricks);
 
-          tileChild = PrinceJS.Utils.image(this.scene, 0, 16, tile.key, "W_" + tileSeed);
+          tileChild = PrinceJS.Utils.image(this.scene, 0, 16, tile.key, this.wallFrame(tile.key, "W", tileSeed));
           tile.front.add(tileChild);
         }
 
@@ -268,6 +268,19 @@ PrinceJS.LevelBuilder.prototype = {
     }
 
     return tile;
+  },
+
+  // The atlases only have the wall patterns of the walls in the original levels:
+  // a wall elsewhere (in an edited level) gets the next pattern there is
+  wallFrame: function (key, prefix, seed) {
+    let texture = this.scene.textures.get(key);
+    for (let i = 0; i < 64; i++) {
+      let name = prefix + "_" + (((seed + i - 1) % 64) + 1);
+      if (texture.has(name)) {
+        return name;
+      }
+    }
+    return prefix + "_" + seed;
   },
 
   getTileAt: function (x, y, id) {

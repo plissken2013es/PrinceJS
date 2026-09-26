@@ -17,7 +17,12 @@ PrinceJS.Tile.Base = function (scene, element, modifier, type) {
 
   this.backSprite = PrinceJS.Utils.image(this.scene, 0, 0, this.key, this.key + "_" + element);
   this.back = new Phaser.GameObjects.Container(this.scene, 0, 0, [this.backSprite]);
-  this.frontSprite = PrinceJS.Utils.image(this.scene, 0, 0, this.key, this.key + "_" + element + "_fg");
+  // Tiles with debris only have the debris in front
+  let front = this.key + "_" + element + "_fg";
+  if (!this.scene.textures.get(this.key).has(front)) {
+    front = this.key + "_" + PrinceJS.Level.TILE_DEBRIS + "_fg";
+  }
+  this.frontSprite = PrinceJS.Utils.image(this.scene, 0, 0, this.key, front);
   this.front = new Phaser.GameObjects.Container(this.scene, 0, 0, [this.frontSprite]);
 
   this.room;

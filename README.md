@@ -5,7 +5,7 @@ Prince of Persia reimplementation written in HTML5/Javascript, built on [Phaser 
 ## Play Online
 
 - https://plissken2013es.github.io/PrinceJS/ lets you choose between the original version
-  (Phaser 2) and the port to Phaser 4
+  (Phaser 2), the port to Phaser 4 and the level editor
 
 ## Play Locally
 
@@ -16,6 +16,23 @@ Prince of Persia reimplementation written in HTML5/Javascript, built on [Phaser 
 - Chrome:
   - `localhost:8080`
 - Enjoy!
+
+## Level Editor
+
+`editor.html` (`localhost:8080/editor.html`) edits the levels in `public/assets/maps/`. It draws
+them with the game's own code, so they look as they will in the game, and plays them in the game.
+
+- Open an original level, a new one, or a level file; save it as `levelN.json`
+- Tools: select (V), paint tiles from the palette (B, right click picks a tile), rooms (R: add,
+  move and delete rooms), guards (G). Characters are dragged to move them
+- Select a button to link it to the gates and exit doors it opens or closes
+- ▶ Play (P) plays the level in the game, ▶ From selected tile (Shift+P) starts it there;
+  Esc returns to the editor
+- The level number picks the guards' strength and the game's script for that level (the
+  mirror, the shadow, the skeleton, Jaffar...)
+- The work in progress is kept in the browser; the Problems list flags what would misbehave
+
+To add an edited level to the game, save it over `public/assets/maps/levelN.json`.
 
 ## Build
 
@@ -32,6 +49,7 @@ the port.
 
 Browser tests (Playwright + Chromium) boot the game, load every level, go through the
 level transitions, cutscenes and credits, and fail on any uncaught error or missing asset.
+`tests/editor.spec.js` covers the level editor.
 
 - `npx playwright install chromium` (once)
 - `npm test`

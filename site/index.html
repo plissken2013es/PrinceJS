@@ -27,6 +27,7 @@
         left: 160px;
         width: 320px;
         height: 32px;
+        /* the items are 16 game pixels (32px) apart */
         color: transparent;
         overflow: hidden;
         outline: none;
@@ -36,8 +37,9 @@
   <body>
     <div id="screen">
       <canvas id="menu" width="640" height="400"></canvas>
-      <a href="phaser2/" style="top: 240px">Original version (Phaser 2)</a>
-      <a href="phaser4/" style="top: 276px">Phaser 4 version</a>
+      <a href="phaser2/" style="top: 232px">Original version (Phaser 2)</a>
+      <a href="phaser4/" style="top: 264px">Phaser 4 version</a>
+      <a href="phaser4/editor.html" style="top: 296px">Level editor</a>
     </div>
     <script>
       (function () {
@@ -51,8 +53,9 @@
         var links = Array.prototype.slice.call(document.querySelectorAll("#screen a"));
 
         var ITEMS = [
-          { text: "ORIGINAL  (PHASER 2)", y: 124 },
-          { text: "PHASER 4", y: 142 }
+          { text: "ORIGINAL  (PHASER 2)", y: 120 },
+          { text: "PHASER 4", y: 136 },
+          { text: "LEVEL EDITOR", y: 152 }
         ];
         var selected = 0;
 
@@ -142,9 +145,9 @@
 
           // a dark panel inside the arch for the menu
           ctx.fillStyle = "rgba(0, 0, 0, 0.75)";
-          ctx.fillRect(52 * SCALE, 98 * SCALE, 216 * SCALE, 76 * SCALE);
+          ctx.fillRect(52 * SCALE, 96 * SCALE, 216 * SCALE, 88 * SCALE);
 
-          text("CHOOSE A VERSION", 160, 104);
+          text("CHOOSE A VERSION", 160, 102);
           ITEMS.forEach(function (item, i) {
             var isSelected = i === selected;
             text(item.text, 160, item.y, isSelected ? 1 : 0.45);
@@ -154,7 +157,7 @@
               text("<", 160 + half + 10, item.y);
             }
           });
-          text("ARROWS TO CHOOSE, ENTER TO PLAY", 160, 160, 0.8);
+          text("ARROWS TO CHOOSE, ENTER TO PLAY", 160, 170, 0.8);
 
           tick++;
           requestAnimationFrame(draw);

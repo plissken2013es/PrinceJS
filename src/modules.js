@@ -1,0 +1,33 @@
+// All the game modules, shared by the game (main.js) and the level editor
+// Module evaluation order matters: prototypes are extended at load time
+import "./Boot.js";
+import "./Preloader.js";
+import "./Game.js";
+import "./Utils.js";
+import "./Title.js";
+import "./EndTitle.js";
+import "./Credits.js";
+import "./Cutscene.js";
+import "./Scene.js";
+import "./Level.js";
+import "./LevelBuilder.js";
+import "./Actor.js";
+import "./Fighter.js";
+import "./Enemy.js";
+import "./Kid.js";
+import "./Mouse.js";
+import "./Interface.js";
+import "./tiles/Base.js";
+import "./tiles/Button.js";
+import "./tiles/Chopper.js";
+import "./tiles/Clock.js";
+import "./tiles/ExitDoor.js";
+import "./tiles/Gate.js";
+import "./tiles/Loose.js";
+import "./tiles/Mirror.js";
+import "./tiles/Potion.js";
+import "./tiles/Skeleton.js";
+import "./tiles/Spikes.js";
+import "./tiles/Star.js";
+import "./tiles/Sword.js";
+import "./tiles/Torch.js";
